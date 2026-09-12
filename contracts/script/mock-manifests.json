@@ -1,0 +1,12 @@
+{
+  "_comment": "Mock MIC/DTA customs manifest lookup for demo purposes. In production this would be replaced by an authenticated B2G/EDI relay to Bolivia's SUMA / Chile's SITRAD — see docs/CUSTOMS-ORACLE.md.",
+  "manifests": [
+    {
+      "cargoManifestHash": "REPLACE_WITH_keccak256(cargoManifestHash_used_in_createAndFundOrder)",
+      "micDtaNumber": "CL-2026-04821",
+      "status": "cleared",
+      "aduanaSalida": "Chungara (Chile)",
+      "aduanaIngreso": "Tambo Quemado (Bolivia)"
+    }
+  ]
+}

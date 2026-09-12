@@ -41,6 +41,12 @@ contract TradeEscrow is ReentrancyGuard, Ownable {
     uint256 public feeBps = 50;
     address public treasury;
 
+    /// @notice Address authorized to confirm customs transit on behalf of an authenticated
+    /// MIC/DTA relay. Bolivia (SUMA) and Chile (SITRAD) expose no public, unauthenticated
+    /// API for this — the real integration is B2G/EDI with despachante credentials, so this
+    /// role stands in for that authenticated relay until one is wired up.
+    address public customsOracle;
+
     mapping(uint256 => EscrowOrder) public orders;
     uint256 public nextOrderId;
 
@@ -52,6 +58,7 @@ contract TradeEscrow is ReentrancyGuard, Ownable {
     event DisputeResolved(uint256 indexed orderId, bool refundedImporter, uint256 amount);
     event FeeBpsUpdated(uint256 oldFeeBps, uint256 newFeeBps);
     event TreasuryUpdated(address oldTreasury, address newTreasury);
+    event CustomsOracleUpdated(address oldOracle, address newOracle);
 
     error InvalidAddress();
     error InvalidAmount();
@@ -112,7 +119,8 @@ contract TradeEscrow is ReentrancyGuard, Ownable {
         if (order.status != EscrowStatus.Funded) {
             revert InvalidStatus(order.status, EscrowStatus.Funded);
         }
-        if (msg.sender != order.carrier && msg.sender != owner()) {
+        bool isCustomsOracle = customsOracle != address(0) && msg.sender == customsOracle;
+        if (msg.sender != order.carrier && msg.sender != owner() && !isCustomsOracle) {
             revert Unauthorized();
         }
 
@@ -234,6 +242,15 @@ contract TradeEscrow is ReentrancyGuard, Ownable {
         if (newTreasury == address(0)) revert InvalidAddress();
         emit TreasuryUpdated(treasury, newTreasury);
         treasury = newTreasury;
+    }
+
+    /// @notice Updates the authorized MIC/DTA customs relay address.
+    /// @dev See `customsOracle` docs — stands in for an authenticated despachante relay.
+    /// @param newOracle New customs oracle address.
+    function setCustomsOracle(address newOracle) external onlyOwner {
+        if (newOracle == address(0)) revert InvalidAddress();
+        emit CustomsOracleUpdated(customsOracle, newOracle);
+        customsOracle = newOracle;
     }
 
     /// @notice Convenience view helper to query full order details.

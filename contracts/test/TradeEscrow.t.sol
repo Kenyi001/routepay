@@ -224,4 +224,42 @@ contract TradeEscrowTest is Test {
         assertEq(uint256(order.status), uint256(TradeEscrow.EscrowStatus.Refunded));
         assertEq(usdc.balanceOf(importer) - importerBefore, freightAmount);
     }
+
+    function test_CustomsOracleCanStartTransit() public {
+        address customsOracle = address(0x0BACD0);
+        tradeEscrow.setCustomsOracle(customsOracle);
+
+        vm.prank(importer);
+        uint256 orderId = tradeEscrow.createAndFundOrder(
+            carrier,
+            address(usdc),
+            freightAmount,
+            manifestHash,
+            duration
+        );
+
+        // The customs relay (MockCustomsRelay.s.sol in production) confirms transit
+        // instead of the carrier self-reporting it. See docs/CUSTOMS-ORACLE.md.
+        vm.prank(customsOracle);
+        tradeEscrow.startTransit(orderId);
+
+        TradeEscrow.EscrowOrder memory order = tradeEscrow.getOrder(orderId);
+        assertEq(uint256(order.status), uint256(TradeEscrow.EscrowStatus.InTransit));
+    }
+
+    function test_RevertIfUnsetCustomsOracleTriesStartTransit() public {
+        vm.prank(importer);
+        uint256 orderId = tradeEscrow.createAndFundOrder(
+            carrier,
+            address(usdc),
+            freightAmount,
+            manifestHash,
+            duration
+        );
+
+        // customsOracle defaults to address(0) — no one should be authorized as it
+        vm.prank(address(0));
+        vm.expectRevert(TradeEscrow.Unauthorized.selector);
+        tradeEscrow.startTransit(orderId);
+    }
 }
