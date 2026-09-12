@@ -33,8 +33,10 @@ export default function RoutePayApp() {
   const {
     isLoading,
     txHash,
+    errorMessage,
     createAndFundOrder,
     startTransit,
+    signTangemTap,
     settleWithTangemTap,
     explorerUrl,
   } = useTradeEscrow();
@@ -42,6 +44,7 @@ export default function RoutePayApp() {
   // Role & Escrow Lifecycle
   const [role, setRole] = useState<Role>("importer");
   const [orderStatus, setOrderStatus] = useState<EscrowState>("none");
+  const [currentOrderId, setCurrentOrderId] = useState<bigint>(BigInt(1));
 
   // Route Details
   const [origin, setOrigin] = useState("Puerto Arica, Chile");
@@ -105,6 +108,19 @@ export default function RoutePayApp() {
       durationDays: 7,
     });
 
+    if (!res.success) {
+      showToast(
+        language === "es"
+          ? `✗ No se pudo bloquear el pago: ${errorMessage || "transacción rechazada o fallida"}`
+          : `✗ Could not lock funds: ${errorMessage || "transaction rejected or failed"}`,
+        "error"
+      );
+      return;
+    }
+
+    if (res.orderId) {
+      setCurrentOrderId(BigInt(res.orderId));
+    }
     setOrderStatus("funded");
     setIsPollarModalOpen(false);
 
@@ -139,7 +155,7 @@ export default function RoutePayApp() {
   // STEP 2: Carrier starts international transit
   const handleStartTransit = async () => {
     setIsTruckModalOpen(true);
-    const res = await startTransit(BigInt(1));
+    const res = await startTransit(currentOrderId);
     setOrderStatus("in_transit");
     const hash = res.hash || "0x2c4e...119d";
     showToast(
@@ -216,7 +232,33 @@ export default function RoutePayApp() {
 
   // Settlement via Tangem NFC Tap
   const handleTangemSettled = async () => {
-    const res = await settleWithTangemTap(BigInt(1));
+    // On a phone with Web NFC, the physical Tangem card signs this digest.
+    // Here, the connected wallet (importer) signs it instead — same digest,
+    // same on-chain check, real signature either way (not a fake placeholder).
+    const signature = await signTangemTap(currentOrderId);
+
+    if (!signature) {
+      showToast(
+        language === "es"
+          ? "✗ No se pudo generar la firma (¿wallet conectada? ¿contrato desplegado?)."
+          : "✗ Could not generate signature (wallet connected? contract deployed?).",
+        "error"
+      );
+      return;
+    }
+
+    const res = await settleWithTangemTap(currentOrderId, signature);
+
+    if (!res.success) {
+      showToast(
+        language === "es"
+          ? `✗ La liquidación on-chain falló: ${errorMessage || "revisá la consola"}`
+          : `✗ On-chain settlement failed: ${errorMessage || "check the console"}`,
+        "error"
+      );
+      return;
+    }
+
     setOrderStatus("settled");
     const hash = res.hash || "0x7a1b...55f2";
     showToast(
@@ -449,7 +491,7 @@ export default function RoutePayApp() {
       <TruckTransitModal
         isOpen={isTruckModalOpen}
         onClose={() => setIsTruckModalOpen(false)}
-        orderId="101"
+        orderId={currentOrderId.toString()}
         manifestId={manifestId}
         amount={carrierPayout}
       />
@@ -468,7 +510,7 @@ export default function RoutePayApp() {
         isOpen={isCertificateOpen}
         onClose={() => setIsCertificateOpen(false)}
         onResetDemo={handleResetDemo}
-        orderId="101"
+        orderId={currentOrderId.toString()}
         manifestId={manifestId}
         carrierPayout={carrierPayout}
         protocolFee={protocolFee}

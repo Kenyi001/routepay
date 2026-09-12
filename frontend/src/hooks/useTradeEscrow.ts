@@ -5,7 +5,14 @@ import { useWeb3 } from "@/context/Web3Context";
 import { publicClient } from "@/lib/web3/client";
 import { ROUTEPAY_ADDRESSES } from "@/contracts/addresses";
 import { TRADE_ESCROW_ABI } from "@/contracts/TradeEscrowAbi";
-import { parseUnits, encodeFunctionData, keccak256, toHex } from "viem";
+import {
+  parseUnits,
+  encodeFunctionData,
+  encodeAbiParameters,
+  keccak256,
+  toHex,
+  parseEventLogs,
+} from "viem";
 
 export interface EscrowOrderData {
   orderId: bigint;
@@ -107,10 +114,33 @@ export function useTradeEscrow() {
           });
 
           setTxHash(hash);
+
+          // Read the real orderId back from the OrderFunded event instead of
+          // assuming this is always the contract's first order.
+          let orderId = "1";
+          try {
+            const receipt = await publicClient.waitForTransactionReceipt({ hash });
+            const [fundedEvent] = parseEventLogs({
+              abi: TRADE_ESCROW_ABI,
+              eventName: "OrderFunded",
+              logs: receipt.logs,
+            });
+            if (fundedEvent && "args" in fundedEvent) {
+              orderId = (fundedEvent.args as { orderId: bigint }).orderId.toString();
+            }
+          } catch (parseErr) {
+            console.warn("Could not parse OrderFunded event, falling back to orderId=1", parseErr);
+          }
+
           setIsLoading(false);
-          return { success: true, hash, orderId: "1" };
+          return { success: true, hash, orderId };
         } catch (err: any) {
-          console.error("Live transaction failed, providing simulated fallback for presentation:", err);
+          // Real money movement was attempted — a rejected MetaMask popup or an
+          // on-chain revert must surface as a failure, never a fake success.
+          console.error("Live createAndFundOrder failed:", err);
+          setErrorMessage(err?.shortMessage || err?.message || "Order funding transaction failed.");
+          setIsLoading(false);
+          return { success: false };
         }
       }
 
@@ -170,6 +200,53 @@ export function useTradeEscrow() {
   );
 
   /**
+   * Generates a real signature standing in for the Tangem NFC card tap: the
+   * connected wallet (the importer) signs the same digest the contract checks
+   * in `settleWithTangemTap` — keccak256(SETTLE_TYPEHASH, orderId, chainId).
+   * On a phone with Web NFC, the physical card signs this same digest instead;
+   * this is the desktop/MetaMask equivalent, not a fake placeholder.
+   */
+  const signTangemTap = useCallback(
+    async (orderId: bigint): Promise<`0x${string}` | null> => {
+      const ethereum = typeof window !== "undefined" ? (window as any).ethereum : null;
+      if (!ethereum || !address) return null;
+
+      const contractAddress = getContractAddress();
+      if (contractAddress === "0x0000000000000000000000000000000000000000") return null;
+
+      try {
+        const settleTypeHash = await publicClient.readContract({
+          address: contractAddress,
+          abi: TRADE_ESCROW_ABI,
+          functionName: "SETTLE_TYPEHASH",
+        });
+
+        const chainId = await publicClient.getChainId();
+
+        const digest = keccak256(
+          encodeAbiParameters(
+            [{ type: "bytes32" }, { type: "uint256" }, { type: "uint256" }],
+            [settleTypeHash as `0x${string}`, orderId, BigInt(chainId)]
+          )
+        );
+
+        // personal_sign auto-prefixes with "\x19Ethereum Signed Message:\n32",
+        // matching the contract's primary MessageHashUtils.toEthSignedMessageHash check.
+        const signature = await ethereum.request({
+          method: "personal_sign",
+          params: [digest, address],
+        });
+
+        return signature as `0x${string}`;
+      } catch (err) {
+        console.error("Failed to sign Tangem tap digest:", err);
+        return null;
+      }
+    },
+    [address, getContractAddress]
+  );
+
+  /**
    * Settle order with Tangem NFC cryptographic signature
    */
   const settleWithTangemTap = useCallback(
@@ -204,7 +281,13 @@ export function useTradeEscrow() {
           setIsLoading(false);
           return { success: true, hash };
         } catch (err: any) {
+          // A wallet/contract were available and a real settlement was attempted —
+          // surface the failure instead of silently pretending it succeeded, since
+          // that would hide a real on-chain revert (e.g. missing/invalid signature).
           console.error("Live Tangem settlement failed:", err);
+          setErrorMessage(err?.shortMessage || err?.message || "Settlement transaction failed on-chain.");
+          setIsLoading(false);
+          return { success: false };
         }
       }
 
@@ -225,6 +308,7 @@ export function useTradeEscrow() {
     getOrder,
     createAndFundOrder,
     startTransit,
+    signTangemTap,
     settleWithTangemTap,
     explorerUrl: ROUTEPAY_ADDRESSES.fuji.explorerUrl,
   };
