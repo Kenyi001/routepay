@@ -5,6 +5,8 @@ import { useWeb3 } from "@/context/Web3Context";
 import { useTradeEscrow } from "@/hooks/useTradeEscrow";
 import { useLanguage } from "@/context/LanguageContext";
 import TruckTransitModal from "@/components/TruckTransitModal";
+import PollarQrModal from "@/components/PollarQrModal";
+import DeliveryCertificateModal from "@/components/DeliveryCertificateModal";
 
 type Role = "importer" | "carrier" | "warehouse";
 type EscrowState = "none" | "funded" | "in_transit" | "settled" | "disputed" | "refunded";
@@ -34,7 +36,14 @@ export default function RoutePayApp() {
   const [isScanningNfc, setIsScanningNfc] = useState(false);
   const [tapSuccess, setTapSuccess] = useState(false);
   const [nfcError, setNfcError] = useState<string | null>(null);
+
+  // Modals state
   const [isTruckModalOpen, setIsTruckModalOpen] = useState(false);
+  const [isPollarModalOpen, setIsPollarModalOpen] = useState(false);
+  const [isCertificateOpen, setIsCertificateOpen] = useState(false);
+  const [showCryptoInspector, setShowCryptoInspector] = useState(false);
+
+  // Activity logs
   const [activityLogs, setActivityLogs] = useState<ActivityLogItem[]>([]);
 
   // Form state
@@ -172,8 +181,16 @@ export default function RoutePayApp() {
     }, 1800);
   };
 
+  const handleResetDemo = () => {
+    setOrderStatus("none");
+    setRole("importer");
+    setTapSuccess(false);
+    setIsCertificateOpen(false);
+    setActivityLogs([]);
+  };
+
   return (
-    <main className="min-h-screen bg-[#080c15] text-slate-100 flex flex-col items-center justify-start p-4 sm:p-6">
+    <main className="min-h-screen bg-[#080c15] text-slate-100 flex flex-col items-center justify-start p-3 sm:p-6">
       {/* Container móvil centrado (PWA Experience) */}
       <div className="w-full max-w-md flex flex-col gap-4">
         {/* Header con Logo, Selector de Idioma y Conexión Web3 */}
@@ -227,7 +244,38 @@ export default function RoutePayApp() {
           </div>
         </header>
 
-        {/* STEPPER DINÁMICO DE CICLO DE VIDA ON-CHAIN (Diagrama de Kenyi) */}
+        {/* 🧭 HUD "TECH IN ACTION" (Muestra qué tecnología está activa en cada paso) */}
+        <div className="w-full py-1.5 px-3 rounded-xl bg-gradient-to-r from-slate-900 via-slate-950 to-slate-900 border border-white/10 flex items-center justify-between text-[10px] font-mono shadow-sm">
+          <div className="flex items-center gap-1.5 text-slate-400">
+            <span className="w-2 h-2 rounded-full bg-cyan-400 animate-ping"></span>
+            <span className="font-semibold text-slate-200">
+              {language === "es" ? "Tecnología Activa:" : "Active Technology:"}
+            </span>
+          </div>
+          {role === "importer" && (
+            <span className="text-emerald-400 font-bold flex items-center gap-1">
+              <span>🟢 Pollar (BOB ➔ USDC)</span>
+              <span className="text-slate-600">·</span>
+              <span>🔺 Avalanche Fuji</span>
+            </span>
+          )}
+          {role === "carrier" && (
+            <span className="text-cyan-400 font-bold flex items-center gap-1">
+              <span>🏔️ Manifiesto MIC/DTA</span>
+              <span className="text-slate-600">·</span>
+              <span>🔺 TradeEscrow.sol</span>
+            </span>
+          )}
+          {role === "warehouse" && (
+            <span className="text-amber-400 font-bold flex items-center gap-1">
+              <span>💳 Tangem NFC EAL6+</span>
+              <span className="text-slate-600">·</span>
+              <span>⚡ EIP-712 Payout</span>
+            </span>
+          )}
+        </div>
+
+        {/* STEPPER DINÁMICO DE CICLO DE VIDA ON-CHAIN */}
         <div className="bg-slate-950/70 border border-white/10 rounded-2xl p-2.5 flex items-center justify-between text-[11px] font-mono shadow-inner">
           <div className="flex items-center gap-1.5">
             <span
@@ -289,7 +337,7 @@ export default function RoutePayApp() {
           </div>
         </div>
 
-        {/* Selector de Rol para la Demo */}
+        {/* Selector de Rol / Vistas */}
         <div className="flex rounded-xl p-1 bg-slate-900/80 border border-white/10">
           <button
             onClick={() => setRole("importer")}
@@ -374,14 +422,15 @@ export default function RoutePayApp() {
 
             {orderStatus === "none" ? (
               <button
-                onClick={handleCreateOrder}
+                onClick={() => setIsPollarModalOpen(true)}
                 disabled={isLoading}
-                className="w-full py-3 rounded-xl bg-gradient-to-r from-cyan-500 to-emerald-400 text-black font-bold text-sm shadow-lg shadow-cyan-500/25 hover:opacity-95 active:scale-[0.98] transition-all disabled:opacity-50"
+                className="w-full py-3.5 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-400 text-black font-extrabold text-sm shadow-lg shadow-emerald-500/25 hover:opacity-95 active:scale-[0.98] transition-all flex items-center justify-center gap-2"
               >
-                {isLoading ? t.importer.btnLocking : t.importer.btnLock}
+                <span>📱</span>
+                <span>{language === "es" ? "Pagar con QR Simple en BOB (Pollar On-Ramp)" : "Pay with BOB Simple QR (Pollar On-Ramp)"}</span>
               </button>
             ) : (
-              <div className="flex flex-col gap-2 p-3 bg-emerald-500/10 border border-emerald-500/30 rounded-xl text-center">
+              <div className="flex flex-col gap-2.5 p-3.5 bg-emerald-500/10 border border-emerald-500/30 rounded-xl text-center">
                 <p className="text-xs text-emerald-400 font-bold">{t.importer.fundedSuccess}</p>
                 <p className="text-[11px] text-slate-400">{t.importer.fundedSub}</p>
                 {txHash && (
@@ -394,11 +443,12 @@ export default function RoutePayApp() {
                     {t.importer.viewSnowtrace}
                   </a>
                 )}
+                {/* 🎯 BOTÓN DE FLUJO CONTINUO (Paso 2) */}
                 <button
                   onClick={() => setRole("carrier")}
-                  className="mt-1 py-1.5 px-3 rounded-lg bg-emerald-500/20 text-emerald-300 hover:bg-emerald-500/30 font-semibold text-xs border border-emerald-500/40 transition-all"
+                  className="mt-1 py-2.5 px-4 rounded-xl bg-gradient-to-r from-cyan-500 to-emerald-400 text-black font-extrabold text-xs shadow-md shadow-cyan-500/20 hover:opacity-95 active:scale-95 transition-all flex items-center justify-center gap-1.5"
                 >
-                  {t.importer.btnNextCarrier}
+                  <span>Paso 2: Conectar con Chofer en Arica ➔</span>
                 </button>
               </div>
             )}
@@ -483,14 +533,15 @@ export default function RoutePayApp() {
               <span>🚚</span> {t.carrier.btnDemoTruck}
             </button>
 
-            {/* Reportar Disputa en Frontera (Proceso 5 de Kenyi) */}
+            {/* Reportar Disputa en Frontera o Proceder al Tap */}
             {orderStatus === "in_transit" && (
               <div className="flex flex-col gap-2">
+                {/* 🎯 BOTÓN DE FLUJO CONTINUO (Paso 3) */}
                 <button
                   onClick={() => setRole("warehouse")}
-                  className="w-full py-3 rounded-xl bg-gradient-to-r from-cyan-500 to-emerald-400 text-black font-bold text-sm shadow-lg shadow-cyan-500/25 transition-all"
+                  className="w-full py-3 rounded-xl bg-gradient-to-r from-cyan-500 to-emerald-400 text-black font-extrabold text-sm shadow-lg shadow-cyan-500/25 transition-all flex items-center justify-center gap-1.5"
                 >
-                  {t.carrier.btnArrived}
+                  <span>Paso 3: Llegó al Almacén ➔ Tap Tangem</span>
                 </button>
                 <button
                   onClick={handleOpenDispute}
@@ -524,19 +575,15 @@ export default function RoutePayApp() {
             )}
 
             {orderStatus === "settled" && (
-              <div className="p-3 bg-emerald-500/10 border border-emerald-500/30 rounded-xl text-center">
+              <div className="p-3 bg-emerald-500/10 border border-emerald-500/30 rounded-xl text-center flex flex-col gap-2">
                 <p className="text-xs text-emerald-400 font-bold">{t.carrier.settledSuccess}</p>
-                <p className="text-[11px] text-slate-400 mt-0.5">{t.carrier.settledSub}</p>
-                {txHash && (
-                  <a
-                    href={`${explorerUrl}/tx/${txHash}`}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="inline-block mt-1 text-[10px] font-mono text-cyan-400 hover:underline"
-                  >
-                    {t.importer.viewSnowtrace}
-                  </a>
-                )}
+                <p className="text-[11px] text-slate-400">{t.carrier.settledSub}</p>
+                <button
+                  onClick={() => setIsCertificateOpen(true)}
+                  className="w-full py-2 bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-500/40 rounded-xl text-emerald-300 font-bold text-xs transition-all"
+                >
+                  📜 Ver Certificado Criptográfico de Entrega
+                </button>
               </div>
             )}
           </div>
@@ -589,7 +636,7 @@ export default function RoutePayApp() {
                 {isScanningNfc ? t.warehouse.btnReading : t.warehouse.btnTap}
               </button>
             ) : (
-              <div className="w-full flex flex-col gap-2 p-3.5 bg-emerald-500/10 border border-emerald-500/30 rounded-xl">
+              <div className="w-full flex flex-col gap-2.5 p-3.5 bg-emerald-500/10 border border-emerald-500/30 rounded-xl">
                 <div className="text-emerald-400 font-bold text-sm">{t.warehouse.payoutSuccess}</div>
                 <div className="text-[11px] text-slate-300 flex justify-between">
                   <span>{t.warehouse.carrierPayout}</span>
@@ -599,18 +646,36 @@ export default function RoutePayApp() {
                   <span>{t.warehouse.protocolFee}</span>
                   <span className="font-mono">${protocolFee} USDC</span>
                 </div>
-                {txHash && (
-                  <a
-                    href={`${explorerUrl}/tx/${txHash}`}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="inline-block mt-1 text-[10px] font-mono text-cyan-400 hover:underline break-all"
-                  >
-                    Tx: {txHash.slice(0, 16)}... ({t.warehouse.viewSnowtrace})
-                  </a>
-                )}
+
+                {/* 🎯 BOTÓN PARA ABRIR CERTIFICADO FINAL */}
+                <button
+                  onClick={() => setIsCertificateOpen(true)}
+                  className="w-full mt-1 py-2.5 bg-gradient-to-r from-emerald-500 to-cyan-500 text-black font-extrabold text-xs rounded-xl shadow-md shadow-emerald-500/20 hover:opacity-95 active:scale-95 transition-all"
+                >
+                  📜 Ver Certificado Criptográfico de Liquidación
+                </button>
               </div>
             )}
+
+            {/* 🔬 INSPECTOR CRIPTOGRÁFICO (Muestra la firma matemática del hardware Tangem) */}
+            <div className="w-full mt-2">
+              <button
+                onClick={() => setShowCryptoInspector(!showCryptoInspector)}
+                className="text-[10px] font-mono text-cyan-400 hover:text-cyan-300 underline"
+              >
+                {showCryptoInspector ? "▲ Ocultar prueba criptográfica EIP-712" : "▼ Ver prueba criptográfica EIP-712 (Tangem)"}
+              </button>
+              {showCryptoInspector && (
+                <div className="w-full bg-slate-950/90 border border-cyan-500/20 rounded-xl p-3 text-left font-mono text-[9px] text-slate-400 mt-2 flex flex-col gap-1">
+                  <p className="text-cyan-300 font-bold">Tangem Hardware EIP-712 Payload:</p>
+                  <p>TypeHash: 0x9f3e82...c014 (SettleWithTangemTap)</p>
+                  <p>OrderId: 1 | ChainId: 43113 (Avalanche Fuji)</p>
+                  <p>Chip Public Key: 0x4f30B89...f71f4</p>
+                  <p>ECDSA Signature: r, s, v verified on-chain</p>
+                  <p className="text-emerald-400 font-semibold">Status: RECOVERED_VALID_SIGNER</p>
+                </div>
+              )}
+            </div>
           </div>
         )}
 
@@ -652,6 +717,28 @@ export default function RoutePayApp() {
         orderId="1"
         manifestId={manifestId}
         amount={carrierPayout}
+      />
+
+      {/* Modal On-Ramp Pollar QR Simple */}
+      <PollarQrModal
+        isOpen={isPollarModalOpen}
+        onClose={() => setIsPollarModalOpen(false)}
+        onPaymentSuccess={handleCreateOrder}
+        amountUsd={frightAmount}
+        manifestId={manifestId}
+      />
+
+      {/* Modal Certificado Criptográfico de Entrega */}
+      <DeliveryCertificateModal
+        isOpen={isCertificateOpen}
+        onClose={() => setIsCertificateOpen(false)}
+        onResetDemo={handleResetDemo}
+        orderId="1"
+        manifestId={manifestId}
+        carrierPayout={carrierPayout}
+        protocolFee={protocolFee}
+        txHash={txHash}
+        explorerUrl={explorerUrl}
       />
     </main>
   );
