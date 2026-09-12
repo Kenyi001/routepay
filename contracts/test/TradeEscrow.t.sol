@@ -5,25 +5,35 @@ import {Test} from "forge-std/Test.sol";
 import {TradeEscrow} from "../src/TradeEscrow.sol";
 import {MockUSDC} from "./mocks/MockUSDC.sol";
 import {MessageHashUtils} from "@openzeppelin/contracts/utils/cryptography/MessageHashUtils.sol";
+import {ERC2771Forwarder} from "@openzeppelin/contracts/metatx/ERC2771Forwarder.sol";
 
 contract TradeEscrowTest is Test {
     TradeEscrow internal tradeEscrow;
     MockUSDC internal usdc;
+    ERC2771Forwarder internal forwarder;
 
     uint256 internal importerPrivateKey = 0xA11CE;
     address internal importer;
     address internal carrier = address(0xCA991E8);
     address internal treasury = address(0x78EA5);
     address internal attacker = address(0xBAD);
+    address internal relayer = address(0x1E1A9);
 
     bytes32 internal manifestHash = keccak256("MIC/DTA-BO-CL-2026-00921");
     uint256 internal freightAmount = 2500 * 1e6; // $2,500 USDC
     uint256 internal duration = 7 days;
 
+    bytes32 internal constant PERMIT_TYPEHASH =
+        keccak256("Permit(address owner,address spender,uint256 value,uint256 nonce,uint256 deadline)");
+    bytes32 internal constant FORWARD_REQUEST_TYPEHASH = keccak256(
+        "ForwardRequest(address from,address to,uint256 value,uint256 gas,uint256 nonce,uint48 deadline,bytes data)"
+    );
+
     function setUp() public {
         importer = vm.addr(importerPrivateKey);
 
-        tradeEscrow = new TradeEscrow();
+        forwarder = new ERC2771Forwarder("RoutePay Forwarder");
+        tradeEscrow = new TradeEscrow(address(forwarder));
         tradeEscrow.setTreasury(treasury);
 
         usdc = new MockUSDC();
@@ -31,6 +41,18 @@ contract TradeEscrowTest is Test {
 
         vm.prank(importer);
         usdc.approve(address(tradeEscrow), type(uint256).max);
+    }
+
+    function _domainSeparator(string memory name, string memory version, address verifyingContract)
+        internal
+        view
+        returns (bytes32)
+    {
+        bytes32 typeHash =
+            keccak256("EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)");
+        return keccak256(
+            abi.encode(typeHash, keccak256(bytes(name)), keccak256(bytes(version)), block.chainid, verifyingContract)
+        );
     }
 
     function test_FundOrder() public {
@@ -245,6 +267,68 @@ contract TradeEscrowTest is Test {
 
         TradeEscrow.EscrowOrder memory order = tradeEscrow.getOrder(orderId);
         assertEq(uint256(order.status), uint256(TradeEscrow.EscrowStatus.InTransit));
+    }
+
+    function test_GaslessOrderViaForwarderAndPermit() public {
+        // 1. Importer signs an ERC-2612 permit off-chain (no gas spent) granting
+        //    TradeEscrow allowance, instead of a separate on-chain `approve` tx.
+        uint256 permitDeadline = block.timestamp + 1 hours;
+        bytes32 permitStructHash = keccak256(
+            abi.encode(
+                PERMIT_TYPEHASH, importer, address(tradeEscrow), freightAmount, usdc.nonces(importer), permitDeadline
+            )
+        );
+        bytes32 permitDigest = MessageHashUtils.toTypedDataHash(
+            _domainSeparator("USD Coin", "1", address(usdc)), permitStructHash
+        );
+        (uint8 pv, bytes32 pr, bytes32 ps) = vm.sign(importerPrivateKey, permitDigest);
+
+        // 2. Importer signs an ERC-2771 forward request for `createAndFundOrder`,
+        //    again without spending any gas — the relayer submits both.
+        bytes memory callData = abi.encodeCall(
+            TradeEscrow.createAndFundOrder, (carrier, address(usdc), freightAmount, manifestHash, duration)
+        );
+        uint48 forwardDeadline = uint48(block.timestamp + 1 hours);
+        bytes32 forwardStructHash = keccak256(
+            abi.encode(
+                FORWARD_REQUEST_TYPEHASH,
+                importer,
+                address(tradeEscrow),
+                uint256(0), // value
+                uint256(500_000), // gas
+                forwarder.nonces(importer),
+                forwardDeadline,
+                keccak256(callData)
+            )
+        );
+        bytes32 forwardDigest = MessageHashUtils.toTypedDataHash(
+            _domainSeparator("RoutePay Forwarder", "1", address(forwarder)), forwardStructHash
+        );
+        (uint8 fv, bytes32 fr, bytes32 fs) = vm.sign(importerPrivateKey, forwardDigest);
+
+        ERC2771Forwarder.ForwardRequestData memory request = ERC2771Forwarder.ForwardRequestData({
+            from: importer,
+            to: address(tradeEscrow),
+            value: 0,
+            gas: 500_000,
+            deadline: forwardDeadline,
+            data: callData,
+            signature: abi.encodePacked(fr, fs, fv)
+        });
+
+        // 3. The relayer — not the importer — pays gas for both transactions.
+        //    The importer's wallet never signs an on-chain tx nor holds native gas token.
+        vm.startPrank(relayer);
+        usdc.permit(importer, address(tradeEscrow), freightAmount, permitDeadline, pv, pr, ps);
+        forwarder.execute(request);
+        vm.stopPrank();
+
+        TradeEscrow.EscrowOrder memory order = tradeEscrow.getOrder(1);
+        assertEq(order.importer, importer, "order.importer must be the real signer, not the relayer");
+        assertEq(order.carrier, carrier);
+        assertEq(uint256(order.status), uint256(TradeEscrow.EscrowStatus.Funded));
+        assertEq(usdc.balanceOf(address(tradeEscrow)), freightAmount);
+        assertEq(usdc.balanceOf(importer), 10_000 * 1e6 - freightAmount);
     }
 
     function test_RevertIfUnsetCustomsOracleTriesStartTransit() public {
