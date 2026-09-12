@@ -30,7 +30,7 @@ export default function TruckTransitModal({
   const currentTramo = progress < 40 ? 1 : progress < 85 ? 2 : 3;
 
   // Live Telemetry Simulation
-  const speed = progress > 0 && progress < 100 ? 84 : 0;
+  const speed = progress > 0 && progress < 100 ? (progress < 20 || progress > 80 ? 65 : 88) : 0;
   const altitude =
     progress < 30
       ? 15 // Arica sea level
@@ -45,7 +45,7 @@ export default function TruckTransitModal({
       return;
     }
 
-    // Smooth progress animation: 0% to 100% in ~3.2 seconds
+    // Eased velocity progression: 0% to 100% in ~3.2 seconds
     const interval = setInterval(() => {
       setProgress((prev) => {
         if (prev >= 100) {
@@ -53,9 +53,10 @@ export default function TruckTransitModal({
           setIsCompleted(true);
           return 100;
         }
-        return prev + 2;
+        const delta = prev < 15 ? 1.6 : prev > 85 ? 1.6 : 2.4;
+        return Math.min(prev + delta, 100);
       });
-    }, 60);
+    }, 50);
 
     return () => clearInterval(interval);
   }, [isOpen]);
@@ -63,7 +64,7 @@ export default function TruckTransitModal({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md animate-fadeIn">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md animate-fade-up">
       <div className="w-full max-w-lg bg-[#1F2937] border border-white/15 rounded-3xl p-5 sm:p-6 shadow-2xl shadow-[#0A58CA]/25 flex flex-col items-center text-center relative overflow-hidden">
         {/* Ambient glow halos */}
         <div className="absolute -top-24 -left-24 w-56 h-56 bg-[#0A58CA]/20 rounded-full blur-3xl pointer-events-none"></div>
@@ -123,39 +124,44 @@ export default function TruckTransitModal({
           </div>
         </div>
 
-        {/* WAYPOINT STEPPER BAR */}
-        <div className="w-full flex items-center justify-between px-2 mb-2 text-[10px] font-mono">
+        {/* WAYPOINT STEPPER BAR WITH ACTIVE NODE PULSE */}
+        <div className="w-full flex items-center justify-between px-2 mb-2.5 text-[10px] font-mono">
           <div className="flex flex-col items-start">
             <span className={`font-black flex items-center gap-1 ${currentTramo >= 1 ? "text-blue-300" : "text-slate-500"}`}>
-              <span className={`w-2 h-2 rounded-full ${currentTramo >= 1 ? "bg-[#0A58CA]" : "bg-slate-700"}`}></span>
+              <span className={`w-2.5 h-2.5 rounded-full ${currentTramo >= 1 ? "bg-[#0A58CA] shadow-md shadow-[#0A58CA]" : "bg-slate-700"} ${currentTramo === 1 ? "animate-pulse" : ""}`}></span>
               {t.truckModal.arica}
             </span>
-            <span className="text-[9px] text-slate-500 pl-3">Km 0 · 15m</span>
+            <span className="text-[9px] text-slate-500 pl-3.5">Km 0 · 15m</span>
           </div>
 
-          <div className="flex-1 h-[2px] mx-2 bg-gradient-to-r from-[#0A58CA] via-slate-700 to-[#10B981] relative">
+          <div className="flex-1 h-[2.5px] mx-2 bg-slate-800 relative rounded-full overflow-hidden">
             <div
-              className="absolute top-1/2 -translate-y-1/2 w-2 h-2 rounded-full bg-[#E84142] shadow-sm shadow-[#E84142]"
-              style={{ left: `${progress}%` }}
+              className="h-full bg-gradient-to-r from-[#0A58CA] to-[#E84142] transition-all duration-150"
+              style={{ width: `${Math.min(progress * 2.5, 100)}%` }}
             ></div>
           </div>
 
           <div className="flex flex-col items-center">
             <span className={`font-black flex items-center gap-1 ${currentTramo >= 2 ? "text-[#E84142]" : "text-slate-500"}`}>
-              <span className={`w-2 h-2 rounded-full ${currentTramo >= 2 ? "bg-[#E84142]" : "bg-slate-700"}`}></span>
+              <span className={`w-2.5 h-2.5 rounded-full ${currentTramo >= 2 ? "bg-[#E84142] shadow-md shadow-[#E84142]" : "bg-slate-700"} ${currentTramo === 2 ? "animate-pulse" : ""}`}></span>
               {t.truckModal.tambo}
             </span>
             <span className="text-[9px] text-slate-500">Km 480 · 4,680m</span>
           </div>
 
-          <div className="flex-1 h-[2px] mx-2 bg-gradient-to-r from-[#E84142] to-[#10B981]"></div>
+          <div className="flex-1 h-[2.5px] mx-2 bg-slate-800 relative rounded-full overflow-hidden">
+            <div
+              className="h-full bg-gradient-to-r from-[#E84142] to-[#10B981] transition-all duration-150"
+              style={{ width: `${Math.max(0, Math.min((progress - 40) * 2.2, 100))}%` }}
+            ></div>
+          </div>
 
           <div className="flex flex-col items-end">
             <span className={`font-black flex items-center gap-1 ${currentTramo >= 3 ? "text-[#10B981]" : "text-slate-500"}`}>
-              <span className={`w-2 h-2 rounded-full ${currentTramo >= 3 ? "bg-[#10B981]" : "bg-slate-700"}`}></span>
+              <span className={`w-2.5 h-2.5 rounded-full ${currentTramo >= 3 ? "bg-[#10B981] shadow-md shadow-[#10B981]" : "bg-slate-700"} ${currentTramo === 3 ? "animate-pulse" : ""}`}></span>
               {t.truckModal.santaCruz}
             </span>
-            <span className="text-[9px] text-slate-500 pr-3">Km 1,200 · 416m</span>
+            <span className="text-[9px] text-slate-500 pr-3.5">Km 1,200 · 416m</span>
           </div>
         </div>
 
@@ -183,9 +189,9 @@ export default function TruckTransitModal({
           </div>
 
           {/* Stars & Night Sky Effect */}
-          <div className="absolute top-2 left-6 w-1 h-1 bg-white rounded-full opacity-60"></div>
+          <div className="absolute top-2 left-6 w-1 h-1 bg-white rounded-full opacity-60 star-field"></div>
           <div className="absolute top-5 left-28 w-1.5 h-1.5 bg-blue-200 rounded-full opacity-80 animate-pulse"></div>
-          <div className="absolute top-3 right-20 w-1 h-1 bg-white rounded-full opacity-70"></div>
+          <div className="absolute top-3 right-20 w-1 h-1 bg-white rounded-full opacity-70 star-field"></div>
           <div className="absolute top-8 right-36 w-1 h-1 bg-amber-100 rounded-full opacity-50"></div>
 
           {/* CYBER-TRUCK & ROAD SECTION */}
@@ -206,9 +212,22 @@ export default function TruckTransitModal({
               </svg>
             </div>
 
+            {/* Dust Particles trailing behind wheels */}
+            {!isCompleted && (
+              <div
+                className="absolute bottom-3.5 z-10 pointer-events-none dust-particles"
+                style={{
+                  left: `${Math.min(progress * 0.68, 65)}%`,
+                }}
+              >
+                <div className="w-2.5 h-2.5 rounded-full bg-slate-400/40 blur-xs"></div>
+                <div className="w-3.5 h-3.5 rounded-full bg-slate-300/30 blur-xs -ml-2"></div>
+              </div>
+            )}
+
             {/* Heavy Freight Cyber-Truck SVG with Custom Color Accents */}
             <div
-              className="relative z-20 flex items-end transition-all duration-300 truck-bouncing"
+              className={`relative z-20 flex items-end transition-all duration-300 ${!isCompleted ? "truck-bouncing" : ""}`}
               style={{
                 left: `${Math.min(progress * 0.68, 66)}%`,
               }}
@@ -267,26 +286,44 @@ export default function TruckTransitModal({
 
                 {/* WHEELS with Animated Hubcap Illusion */}
                 {/* Back Trailer Wheel 1 */}
-                <circle cx="16" cy="53" r="7" fill="#020617" stroke="#6B7280" strokeWidth="2.5" />
-                <circle cx="16" cy="53" r="3" fill="#E84142" />
-                <line x1="13" y1="53" x2="19" y2="53" stroke="#FFFFFF" strokeWidth="1" />
-                <line x1="16" y1="50" x2="16" y2="56" stroke="#FFFFFF" strokeWidth="1" />
+                <g transform="translate(16, 53)">
+                  <circle cx="0" cy="0" r="7" fill="#020617" stroke="#6B7280" strokeWidth="2.5" />
+                  <g className={!isCompleted ? "wheel-spinning" : ""}>
+                    <line x1="-5" y1="0" x2="5" y2="0" stroke="#E84142" strokeWidth="1.5" />
+                    <line x1="0" y1="-5" x2="0" y2="5" stroke="#E84142" strokeWidth="1.5" />
+                  </g>
+                  <circle cx="0" cy="0" r="2" fill="#FFFFFF" />
+                </g>
 
                 {/* Back Trailer Wheel 2 */}
-                <circle cx="34" cy="53" r="7" fill="#020617" stroke="#6B7280" strokeWidth="2.5" />
-                <circle cx="34" cy="53" r="3" fill="#E84142" />
-                <line x1="31" y1="53" x2="37" y2="53" stroke="#FFFFFF" strokeWidth="1" />
-                <line x1="34" y1="50" x2="34" y2="56" stroke="#FFFFFF" strokeWidth="1" />
+                <g transform="translate(34, 53)">
+                  <circle cx="0" cy="0" r="7" fill="#020617" stroke="#6B7280" strokeWidth="2.5" />
+                  <g className={!isCompleted ? "wheel-spinning" : ""}>
+                    <line x1="-5" y1="0" x2="5" y2="0" stroke="#E84142" strokeWidth="1.5" />
+                    <line x1="0" y1="-5" x2="0" y2="5" stroke="#E84142" strokeWidth="1.5" />
+                  </g>
+                  <circle cx="0" cy="0" r="2" fill="#FFFFFF" />
+                </g>
 
                 {/* Tractor Intermediate Wheel */}
-                <circle cx="82" cy="53" r="7" fill="#020617" stroke="#6B7280" strokeWidth="2.5" />
-                <circle cx="82" cy="53" r="3" fill="#0A58CA" />
+                <g transform="translate(82, 53)">
+                  <circle cx="0" cy="0" r="7" fill="#020617" stroke="#6B7280" strokeWidth="2.5" />
+                  <g className={!isCompleted ? "wheel-spinning" : ""}>
+                    <line x1="-5" y1="0" x2="5" y2="0" stroke="#0A58CA" strokeWidth="1.5" />
+                    <line x1="0" y1="-5" x2="0" y2="5" stroke="#0A58CA" strokeWidth="1.5" />
+                  </g>
+                  <circle cx="0" cy="0" r="2" fill="#FFFFFF" />
+                </g>
 
                 {/* Front Steer Wheel */}
-                <circle cx="106" cy="53" r="7" fill="#020617" stroke="#6B7280" strokeWidth="2.5" />
-                <circle cx="106" cy="53" r="3" fill="#0A58CA" />
-                <line x1="103" y1="53" x2="109" y2="53" stroke="#FFFFFF" strokeWidth="1" />
-                <line x1="106" y1="50" x2="106" y2="56" stroke="#FFFFFF" strokeWidth="1" />
+                <g transform="translate(106, 53)">
+                  <circle cx="0" cy="0" r="7" fill="#020617" stroke="#6B7280" strokeWidth="2.5" />
+                  <g className={!isCompleted ? "wheel-spinning" : ""}>
+                    <line x1="-5" y1="0" x2="5" y2="0" stroke="#E84142" strokeWidth="1.5" />
+                    <line x1="0" y1="-5" x2="0" y2="5" stroke="#E84142" strokeWidth="1.5" />
+                  </g>
+                  <circle cx="0" cy="0" r="2" fill="#FFFFFF" />
+                </g>
 
                 {/* Gradients */}
                 <defs>

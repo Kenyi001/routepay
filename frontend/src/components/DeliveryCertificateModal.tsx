@@ -19,7 +19,6 @@ export default function DeliveryCertificateModal({
   isOpen,
   onClose,
   onResetDemo,
-  orderId = "1",
   manifestId = "MIC-DTA-2026-AR-BO-0911",
   carrierPayout = "2,487.50",
   protocolFee = "12.50",
@@ -33,18 +32,18 @@ export default function DeliveryCertificateModal({
   const displayHash = txHash || "0x9a8f27b4e61d8892f3e104c99715a67c51e038892b3a98716b12f71694f31b28";
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md animate-fade-in">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md animate-fade-up">
       <div className="w-full max-w-md bg-gradient-to-b from-slate-900 via-[#0a1224] to-[#040814] border-2 border-emerald-400/50 rounded-3xl p-6 shadow-2xl shadow-emerald-500/25 flex flex-col items-center text-center relative overflow-hidden">
         {/* Certificate Watermark / Ambient Glow */}
         <div className="absolute -top-24 -right-24 w-52 h-52 bg-emerald-500/20 rounded-full blur-3xl pointer-events-none"></div>
         <div className="absolute -bottom-24 -left-24 w-52 h-52 bg-cyan-500/15 rounded-full blur-3xl pointer-events-none"></div>
 
-        {/* Certificate Seal */}
-        <div className="w-14 h-14 rounded-full bg-gradient-to-tr from-amber-400 to-yellow-200 text-black flex items-center justify-center font-black text-2xl shadow-xl shadow-amber-500/30 border-2 border-amber-300 my-1">
+        {/* Animated Certificate Wax Seal */}
+        <div className="w-16 h-16 rounded-full bg-gradient-to-tr from-amber-400 via-yellow-300 to-amber-100 text-black flex items-center justify-center font-black text-2xl shadow-xl shadow-amber-500/40 border-2 border-amber-200 my-1 animate-seal-pop">
           ✓
         </div>
 
-        <p className="text-[10px] font-mono text-amber-400 uppercase tracking-widest font-bold mt-2">
+        <p className="text-[10px] font-mono text-amber-400 uppercase tracking-widest font-extrabold mt-2">
           {language === "es" ? "CERTIFICADO CRIPTOGRÁFICO DE ENTREGA" : "CRYPTOGRAPHIC PROOF OF DELIVERY"}
         </p>
 
@@ -52,7 +51,7 @@ export default function DeliveryCertificateModal({
           {language === "es" ? "Liquidación Comercial Completada" : "Commercial Settlement Completed"}
         </h3>
 
-        <p className="text-xs text-slate-300 mt-1 max-w-xs">
+        <p className="text-xs text-slate-300 mt-1 max-w-xs leading-relaxed">
           {language === "es"
             ? "Mercadería recibida y verificada presencialmente con chip de hardware Tangem NFC."
             : "Physical goods verified and accepted in-person with Tangem NFC hardware chip."}
