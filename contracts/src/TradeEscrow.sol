@@ -69,6 +69,9 @@ contract TradeEscrow is ReentrancyGuard, Ownable, ERC2771Context {
     error InvalidAmount();
     error InvalidDuration();
     error InvalidStatus(EscrowStatus currentStatus, EscrowStatus expectedStatus);
+    /// @dev Used where more than one status is acceptable (Funded or InTransit) — unlike
+    /// `InvalidStatus`, this doesn't claim a single false "expected" value.
+    error InvalidStatusForOperation(EscrowStatus currentStatus);
     error Unauthorized();
     error DeadlineNotPassed(uint256 currentTimestamp, uint256 deadline);
     error InvalidSignature();
@@ -179,7 +182,7 @@ contract TradeEscrow is ReentrancyGuard, Ownable, ERC2771Context {
     function refundOnTimeout(uint256 orderId) external nonReentrant {
         EscrowOrder storage order = orders[orderId];
         if (order.status != EscrowStatus.Funded && order.status != EscrowStatus.InTransit) {
-            revert InvalidStatus(order.status, EscrowStatus.InTransit);
+            revert InvalidStatusForOperation(order.status);
         }
         if (block.timestamp < order.deadline) {
             revert DeadlineNotPassed(block.timestamp, order.deadline);
@@ -202,7 +205,7 @@ contract TradeEscrow is ReentrancyGuard, Ownable, ERC2771Context {
     function openDispute(uint256 orderId) external {
         EscrowOrder storage order = orders[orderId];
         if (order.status != EscrowStatus.Funded && order.status != EscrowStatus.InTransit) {
-            revert InvalidStatus(order.status, EscrowStatus.InTransit);
+            revert InvalidStatusForOperation(order.status);
         }
         address sender = _msgSender();
         if (sender != order.importer && sender != order.carrier && sender != owner()) {

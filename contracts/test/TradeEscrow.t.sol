@@ -346,4 +346,121 @@ contract TradeEscrowTest is Test {
         vm.expectRevert(TradeEscrow.Unauthorized.selector);
         tradeEscrow.startTransit(orderId);
     }
+
+    function test_RevertIfDoubleSettle() public {
+        vm.prank(importer);
+        uint256 orderId = tradeEscrow.createAndFundOrder(
+            carrier, address(usdc), freightAmount, manifestHash, duration
+        );
+
+        vm.prank(carrier);
+        tradeEscrow.startTransit(orderId);
+
+        bytes32 digest = keccak256(abi.encode(tradeEscrow.SETTLE_TYPEHASH(), orderId, block.chainid));
+        bytes32 ethSignedDigest = MessageHashUtils.toEthSignedMessageHash(digest);
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(importerPrivateKey, ethSignedDigest);
+        bytes memory signature = abi.encodePacked(r, s, v);
+
+        vm.prank(carrier);
+        tradeEscrow.settleWithTangemTap(orderId, signature);
+
+        // Second attempt to settle the same order must revert — order is Delivered now,
+        // not InTransit, so a stolen/replayed signature can't drain the contract twice.
+        vm.prank(carrier);
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                TradeEscrow.InvalidStatus.selector, TradeEscrow.EscrowStatus.Delivered, TradeEscrow.EscrowStatus.InTransit
+            )
+        );
+        tradeEscrow.settleWithTangemTap(orderId, signature);
+    }
+
+    function test_RevertIfDoubleRefund() public {
+        vm.prank(importer);
+        uint256 orderId = tradeEscrow.createAndFundOrder(
+            carrier, address(usdc), freightAmount, manifestHash, duration
+        );
+
+        vm.warp(block.timestamp + duration + 1);
+
+        vm.prank(importer);
+        tradeEscrow.refundOnTimeout(orderId);
+
+        // Second refund attempt on an already-refunded order must revert, with the
+        // correct current status reported (see InvalidStatusForOperation, not a false
+        // "expected InTransit" claim).
+        vm.prank(importer);
+        vm.expectRevert(
+            abi.encodeWithSelector(TradeEscrow.InvalidStatusForOperation.selector, TradeEscrow.EscrowStatus.Refunded)
+        );
+        tradeEscrow.refundOnTimeout(orderId);
+    }
+
+    function test_RevertIfUnauthorizedOpenDispute() public {
+        vm.prank(importer);
+        uint256 orderId = tradeEscrow.createAndFundOrder(
+            carrier, address(usdc), freightAmount, manifestHash, duration
+        );
+
+        vm.prank(attacker);
+        vm.expectRevert(TradeEscrow.Unauthorized.selector);
+        tradeEscrow.openDispute(orderId);
+    }
+
+    function test_DisputeResolvedInFavorOfCarrier() public {
+        vm.prank(importer);
+        uint256 orderId = tradeEscrow.createAndFundOrder(
+            carrier, address(usdc), freightAmount, manifestHash, duration
+        );
+
+        vm.prank(carrier);
+        tradeEscrow.startTransit(orderId);
+
+        vm.prank(importer);
+        tradeEscrow.openDispute(orderId);
+
+        uint256 carrierBefore = usdc.balanceOf(carrier);
+        uint256 treasuryBefore = usdc.balanceOf(treasury);
+
+        // Arbiter rules in favor of the carrier this time (refundImporter = false)
+        tradeEscrow.resolveDispute(orderId, false);
+
+        TradeEscrow.EscrowOrder memory order = tradeEscrow.getOrder(orderId);
+        assertEq(uint256(order.status), uint256(TradeEscrow.EscrowStatus.Delivered));
+
+        uint256 expectedFee = (freightAmount * 50) / 10000;
+        assertEq(usdc.balanceOf(carrier) - carrierBefore, freightAmount - expectedFee);
+        assertEq(usdc.balanceOf(treasury) - treasuryBefore, expectedFee);
+    }
+
+    function test_RevertIfCreateOrderWithZeroAddress() public {
+        vm.startPrank(importer);
+        vm.expectRevert(TradeEscrow.InvalidAddress.selector);
+        tradeEscrow.createAndFundOrder(address(0), address(usdc), freightAmount, manifestHash, duration);
+
+        vm.expectRevert(TradeEscrow.InvalidAddress.selector);
+        tradeEscrow.createAndFundOrder(carrier, address(0), freightAmount, manifestHash, duration);
+        vm.stopPrank();
+    }
+
+    function test_RevertIfCreateOrderWithZeroAmountOrDuration() public {
+        vm.startPrank(importer);
+        vm.expectRevert(TradeEscrow.InvalidAmount.selector);
+        tradeEscrow.createAndFundOrder(carrier, address(usdc), 0, manifestHash, duration);
+
+        vm.expectRevert(TradeEscrow.InvalidDuration.selector);
+        tradeEscrow.createAndFundOrder(carrier, address(usdc), freightAmount, manifestHash, 0);
+        vm.stopPrank();
+    }
+
+    function test_RevertIfFeeBpsTooHigh() public {
+        vm.expectRevert(TradeEscrow.FeeTooHigh.selector);
+        tradeEscrow.setFeeBps(501);
+    }
+
+    function test_RevertIfNonOwnerSetsTreasury() public {
+        vm.prank(attacker);
+        vm.expectRevert();
+        tradeEscrow.setTreasury(attacker);
+    }
 }
