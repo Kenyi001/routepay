@@ -1,6 +1,8 @@
 "use client";
 
 import React, { useState } from "react";
+import { useWeb3 } from "@/context/Web3Context";
+import { useTradeEscrow } from "@/hooks/useTradeEscrow";
 import {
   Header,
   RoleSelector,
@@ -11,12 +13,24 @@ import {
   TangemTapModal,
   ToastNotification,
   ToastType,
+  TruckTransitModal,
 } from "../components";
 
 export default function RoutePayApp() {
+  const { address } = useWeb3();
+  const {
+    isLoading,
+    txHash,
+    createAndFundOrder,
+    startTransit,
+    settleWithTangemTap,
+    explorerUrl,
+  } = useTradeEscrow();
+
   const [role, setRole] = useState<Role>("importer");
   const [orderStatus, setOrderStatus] = useState<"none" | "funded" | "in_transit" | "settled">("none");
   const [isPollarModalOpen, setIsPollarModalOpen] = useState(false);
+  const [isTruckModalOpen, setIsTruckModalOpen] = useState(false);
   const [toast, setToast] = useState<{ message: string | null; type: ToastType }>({
     message: null,
     type: "info",
@@ -27,7 +41,9 @@ export default function RoutePayApp() {
   const [destination] = useState("Santa Cruz de la Sierra, Bolivia");
   const [frightAmount, setFrightAmount] = useState("2500");
   const [manifestId, setManifestId] = useState("MIC-DTA-2026-AR-BO-0911");
-  const [carrierAddress, setCarrierAddress] = useState("0x71C...Carrier42");
+  const [carrierAddress, setCarrierAddress] = useState(
+    address || "0x71C8F794B325261EC9dB43bAf6e5a0D6C11b2E42"
+  );
 
   // Payout calculation
   const numAmount = parseFloat(frightAmount || "0");
@@ -41,7 +57,15 @@ export default function RoutePayApp() {
     }, 5000);
   };
 
-  const handleFundOrder = (method: "pollar" | "direct") => {
+  const handleFundOrder = async (method: "pollar" | "direct") => {
+    // Call TradeEscrow smart contract
+    const res = await createAndFundOrder({
+      carrier: carrierAddress,
+      amountUsd: parseFloat(frightAmount || "0"),
+      manifestId,
+      durationDays: 7,
+    });
+
     setOrderStatus("funded");
     setIsPollarModalOpen(false);
 
@@ -60,7 +84,9 @@ export default function RoutePayApp() {
     setRole("carrier");
   };
 
-  const handleStartTransit = () => {
+  const handleStartTransit = async () => {
+    setIsTruckModalOpen(true);
+    await startTransit(BigInt(1));
     setOrderStatus("in_transit");
     showToast(
       "🚚 Salida de Puerto confirmada. Tránsito internacional iniciado.",
@@ -73,10 +99,11 @@ export default function RoutePayApp() {
     showToast("📍 Llegada a almacén destino. Realiza el Tap NFC para liberar pago.", "info");
   };
 
-  const handleTangemSettled = () => {
+  const handleTangemSettled = async () => {
+    await settleWithTangemTap(BigInt(1));
     setOrderStatus("settled");
     showToast(
-      "🎉 Entrega verificada por firma Tangem NFC. Liquidación ejecutada.",
+      "🎉 Entrega verificada por firma Tangem NFC. Liquidación ejecutada en Avalanche Fuji.",
       "success"
     );
   };
@@ -85,8 +112,8 @@ export default function RoutePayApp() {
     <main className="min-h-screen bg-[#121214] text-white flex flex-col items-center justify-start p-4 sm:p-6 selection:bg-[#E84142] selection:text-white">
       {/* Mobile-first centered app container (PWA design, 390px - 430px) */}
       <div className="w-full max-w-md flex flex-col gap-5">
-        {/* Header Component */}
-        <Header networkName="Avalanche Fuji" walletAddress="0x71C...C42" />
+        {/* Header Component with Web3 Connection & Avalanche Fuji Status */}
+        <Header networkName="Avalanche Fuji" />
 
         {/* Dynamic Toast Feedback Notification */}
         <ToastNotification
@@ -124,6 +151,10 @@ export default function RoutePayApp() {
             carrierPayout={carrierPayout}
             onStartTransit={handleStartTransit}
             onGoToTangemTap={handleGoToTangemTap}
+            onOpenTruckModal={() => setIsTruckModalOpen(true)}
+            txHash={txHash}
+            explorerUrl={explorerUrl}
+            isLoading={isLoading}
           />
         )}
 
@@ -152,6 +183,15 @@ export default function RoutePayApp() {
           <span className="text-slate-400">Avalanche Fuji · Pollar · Tangem</span>
         </footer>
       </div>
+
+      {/* Animated Cyber-Truck Transit Modal */}
+      <TruckTransitModal
+        isOpen={isTruckModalOpen}
+        onClose={() => setIsTruckModalOpen(false)}
+        orderId="101"
+        manifestId={manifestId}
+        amount={carrierPayout}
+      />
     </main>
   );
 }
