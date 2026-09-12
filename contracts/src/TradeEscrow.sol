@@ -268,4 +268,16 @@ contract TradeEscrow is ReentrancyGuard, Ownable, ERC2771Context {
     function getOrder(uint256 orderId) external view returns (EscrowOrder memory) {
         return orders[orderId];
     }
+
+    function _msgSender() internal view override(Context, ERC2771Context) returns (address) {
+        return ERC2771Context._msgSender();
+    }
+
+    function _msgData() internal view override(Context, ERC2771Context) returns (bytes calldata) {
+        return ERC2771Context._msgData();
+    }
+
+    function _contextSuffixLength() internal view override(Context, ERC2771Context) returns (uint256) {
+        return ERC2771Context._contextSuffixLength();
+    }
 }
