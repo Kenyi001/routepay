@@ -20,6 +20,8 @@ on release.
 
 ## How it works
 
+0. **Pick a role and sign in** — the app opens on a role picker (Importer / Carrier);
+   each role sees a locked view of the flow relevant to them.
 1. **Importer funds the order** — deposits USDC into `TradeEscrow`, gaslessly (see below).
 2. **Carrier starts transit** — confirmed by the carrier or an authorized customs relay.
 3. **Delivery tap releases payment** — the receiver's Tangem card signs an EIP-712
@@ -66,6 +68,26 @@ npm install
 npm run dev
 ```
 
+## Documentation
+
+Start here, then branch out to whichever question you actually have:
+
+**Architecture & contract**
+- [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) — flow, states, stack, known risks
+- [`docs/DIAGRAMA_FLUJO_DATOS.md`](docs/DIAGRAMA_FLUJO_DATOS.md) / [interactive version](docs/diagrama_flujo_datos.html) — data flow through the contract
+- [`docs/GASLESS-RELAYER.md`](docs/GASLESS-RELAYER.md) — how ERC-2771 + permit gasless works
+- [`docs/CUSTOMS-ORACLE.md`](docs/CUSTOMS-ORACLE.md) — why there's a `customsOracle` role instead of a real customs API
+
+**Why these technologies (verified research, not marketing)**
+- [`docs/JUSTIFICACION-AVALANCHE-CASOS-REALES.md`](docs/JUSTIFICACION-AVALANCHE-CASOS-REALES.md)
+- [`docs/JUSTIFICACION-UNLOCK-POLLAR-CASOS-REALES.md`](docs/JUSTIFICACION-UNLOCK-POLLAR-CASOS-REALES.md)
+- [`docs/POLLAR-Y-UNLOCK.md`](docs/POLLAR-Y-UNLOCK.md) — how the two would integrate together
+
+**Demo readiness**
+- [`docs/FLUJO-REAL-DEMO.md`](docs/FLUJO-REAL-DEMO.md) — what's really on-chain vs. narrative in the live demo
+- [`docs/CORRIDA-REAL-DE-CARGA.md`](docs/CORRIDA-REAL-DE-CARGA.md) — on-chain audit log (wallet balances, deploy checks)
+- [`docs/PITCH-OFICIAL.md`](docs/PITCH-OFICIAL.md) — the 2-minute pitch script
+
 ## Deployed contracts (Avalanche Fuji)
 
 | Contract | Address |
@@ -97,10 +119,15 @@ npm run dev
 
 ## Status
 
-Contract fully implemented (createAndFundOrder, startTransit, settleWithTangemTap,
-refundOnTimeout, openDispute/resolveDispute), covered by 21 Foundry tests. Frontend
-live on Vercel. Open items: real testnet USDC/AVAX funding for the demo wallet, and
-wiring the deployed contract addresses into the frontend's environment variables.
+- Contract fully implemented (`createAndFundOrder`, `startTransit`,
+  `settleWithTangemTap`, `refundOnTimeout`, `openDispute`/`resolveDispute`) — **21/21
+  Foundry tests pass**, verified with a real `forge test` run, not simulated.
+- Deployed and verified on Fuji (bytecode confirmed via `eth_getCode`).
+- Frontend live on Vercel, wired to the real deployed address (no more placeholder).
+- Demo wallet already funded with real testnet USDC and AVAX (see
+  [`docs/CORRIDA-REAL-DE-CARGA.md`](docs/CORRIDA-REAL-DE-CARGA.md)).
+- Open items: `ERC2771Forwarder` address still needs confirming, and a rehearsed
+  end-to-end run against the pitch script's timing.
 
 ## License
 
