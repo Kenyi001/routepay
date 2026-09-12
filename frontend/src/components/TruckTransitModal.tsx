@@ -22,6 +22,9 @@ export default function TruckTransitModal({
   const [progress, setProgress] = useState(0);
   const [isCompleted, setIsCompleted] = useState(false);
 
+  // Determine active tramo
+  const currentTramo = progress < 40 ? 1 : progress < 85 ? 2 : 3;
+
   // Live Telemetry Simulation
   const speed = progress > 0 && progress < 100 ? 84 : 0;
   const altitude =
@@ -57,7 +60,7 @@ export default function TruckTransitModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md animate-fadeIn">
-      <div className="w-full max-w-lg bg-[#27272A] border border-white/15 rounded-3xl p-6 shadow-2xl shadow-[#E84142]/25 flex flex-col items-center text-center relative overflow-hidden">
+      <div className="w-full max-w-lg bg-[#27272A] border border-white/15 rounded-3xl p-5 sm:p-6 shadow-2xl shadow-[#E84142]/25 flex flex-col items-center text-center relative overflow-hidden">
         {/* Ambient glow halos */}
         <div className="absolute -top-24 -left-24 w-56 h-56 bg-[#E84142]/20 rounded-full blur-3xl pointer-events-none"></div>
         <div className="absolute -bottom-24 -right-24 w-56 h-56 bg-[#10B981]/20 rounded-full blur-3xl pointer-events-none"></div>
@@ -78,29 +81,120 @@ export default function TruckTransitModal({
           </span>
         </div>
 
-        {/* LIVE TELEMETRY HUD BAR */}
-        <div className="w-full bg-[#18181B] rounded-xl p-2.5 mb-2 border border-white/5 flex items-center justify-between text-[10px] font-mono text-slate-300">
-          <div className="flex items-center gap-1.5">
-            <span className="text-slate-400">GPS:</span>
-            <span className="text-[#E84142] font-bold">
-              {progress < 40 ? "18.478° S, 70.312° W" : progress < 85 ? "18.279° S, 69.043° W" : "17.783° S, 63.182° W"}
+        {/* DYNAMIC ACTIVE TRAMO HUD CARD */}
+        <div className="w-full bg-[#18181B] rounded-2xl p-3 mb-2.5 border border-white/10 shadow-lg text-left transition-all">
+          <div className="flex items-center justify-between mb-1">
+            <span className="text-[10px] font-mono uppercase tracking-widest text-[#E84142] font-black flex items-center gap-1.5">
+              <span className="w-2 h-2 rounded-full bg-[#E84142] animate-pulse"></span>
+              {currentTramo === 1 && "📍 Tramo 1: Despacho en Puerto (Chile)"}
+              {currentTramo === 2 && "🏔️ Tramo 2: Aduana Fronteriza (Tambo Quemado)"}
+              {currentTramo === 3 && "📦 Tramo 3: Arribo a Almacén Central (Santa Cruz)"}
+            </span>
+
+            <span
+              className={`text-[9px] font-mono px-2 py-0.5 rounded-full font-bold uppercase ${
+                currentTramo === 1
+                  ? "bg-[#E84142]/20 text-[#E84142] border border-[#E84142]/40"
+                  : currentTramo === 2
+                  ? "bg-amber-500/20 text-amber-300 border border-amber-500/40"
+                  : "bg-[#10B981]/20 text-[#10B981] border border-[#10B981]/40"
+              }`}
+            >
+              {currentTramo === 1 && "Salida"}
+              {currentTramo === 2 && "Aduana 4,680m"}
+              {currentTramo === 3 && "Destino Final"}
             </span>
           </div>
 
-          <div className="flex items-center gap-3">
-            <div>
-              <span className="text-slate-400">Velocidad: </span>
-              <span className="text-white font-bold">{speed} km/h</span>
+          <p className="text-xs font-semibold text-white">
+            {currentTramo === 1 && "Carga pesada inspeccionada y saliendo del Puerto de Arica."}
+            {currentTramo === 2 && "Revisión de precintos y manifiesto MIC/DTA en paso cordillerano."}
+            {currentTramo === 3 && "Llegada a almacén central. Listo para Tap de confirmación Tangem NFC."}
+          </p>
+
+          <div className="flex items-center justify-between text-[10px] font-mono text-slate-400 mt-2 pt-2 border-t border-white/5">
+            <span>GPS: {progress < 40 ? "18.478° S, 70.312° W" : progress < 85 ? "18.279° S, 69.043° W" : "17.783° S, 63.182° W"}</span>
+            <div className="flex gap-2">
+              <span>Vel: <strong className="text-white">{speed} km/h</strong></span>
+              <span>Alt: <strong className="text-[#10B981]">{altitude.toLocaleString()}m</strong></span>
             </div>
-            <div>
-              <span className="text-slate-400">Altitud: </span>
-              <span className="text-[#10B981] font-bold">{altitude.toLocaleString()} m</span>
+          </div>
+        </div>
+
+        {/* HIGH-TECH STEPPER TRACKER (ARICA ➔ TAMBO QUEMADO ➔ SANTA CRUZ) */}
+        <div className="w-full bg-[#18181B]/90 rounded-2xl p-3.5 mb-2 border border-white/10 flex flex-col gap-2 relative shadow-inner">
+          <div className="flex justify-between items-center relative z-10">
+            {/* WAYPOINT 1: ARICA */}
+            <div className="flex flex-col items-center gap-1 flex-1">
+              <div
+                className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-black transition-all duration-300 shadow-md ${
+                  progress >= 40
+                    ? "bg-[#10B981] text-black shadow-[#10B981]/40 border-2 border-[#10B981]"
+                    : "bg-[#E84142] text-white shadow-[#E84142]/50 border-2 border-white animate-bounce-subtle"
+                }`}
+              >
+                {progress >= 40 ? "✓" : "1"}
+              </div>
+              <span className="text-[11px] font-extrabold text-white font-mono">🇨🇱 Arica</span>
+              <span className="text-[9px] text-slate-400 font-mono">Puerto CL</span>
+            </div>
+
+            {/* CONNECTING TRACK LINE 1-2 */}
+            <div className="flex-1 h-1 bg-[#27272A] relative -mt-4 overflow-hidden rounded-full border border-white/5">
+              <div
+                className="h-full bg-gradient-to-r from-[#E84142] to-[#10B981] transition-all duration-150"
+                style={{ width: `${Math.min(Math.max((progress / 40) * 100, 0), 100)}%` }}
+              ></div>
+            </div>
+
+            {/* WAYPOINT 2: TAMBO QUEMADO */}
+            <div className="flex flex-col items-center gap-1 flex-1">
+              <div
+                className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-black transition-all duration-300 shadow-md ${
+                  progress >= 85
+                    ? "bg-[#10B981] text-black shadow-[#10B981]/40 border-2 border-[#10B981]"
+                    : progress >= 40
+                    ? "bg-[#E84142] text-white shadow-[#E84142]/50 border-2 border-white animate-bounce-subtle"
+                    : "bg-[#27272A] text-slate-500 border border-white/10"
+                }`}
+              >
+                {progress >= 85 ? "✓" : "2"}
+              </div>
+              <span className="text-[11px] font-extrabold text-white font-mono">🏔️ Tambo Q.</span>
+              <span className="text-[9px] text-slate-400 font-mono">Aduana BO</span>
+            </div>
+
+            {/* CONNECTING TRACK LINE 2-3 */}
+            <div className="flex-1 h-1 bg-[#27272A] relative -mt-4 overflow-hidden rounded-full border border-white/5">
+              <div
+                className="h-full bg-gradient-to-r from-[#E84142] to-[#10B981] transition-all duration-150"
+                style={{
+                  width: `${Math.min(Math.max(((progress - 40) / 45) * 100, 0), 100)}%`,
+                }}
+              ></div>
+            </div>
+
+            {/* WAYPOINT 3: SANTA CRUZ */}
+            <div className="flex flex-col items-center gap-1 flex-1">
+              <div
+                className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-black transition-all duration-300 shadow-md ${
+                  progress >= 100
+                    ? "bg-[#10B981] text-black shadow-[#10B981]/40 border-2 border-[#10B981]"
+                    : progress >= 85
+                    ? "bg-[#E84142] text-white shadow-[#E84142]/50 border-2 border-white animate-bounce-subtle"
+                    : "bg-[#27272A] text-slate-500 border border-white/10"
+                }`}
+              >
+                {progress >= 100 ? "✓" : "3"}
+              </div>
+              <span className="text-[11px] font-extrabold text-white font-mono">🇧🇴 Santa Cruz</span>
+              <span className="text-[9px] text-slate-400 font-mono">Almacén BO</span>
             </div>
           </div>
         </div>
 
         {/* HIGH-TECH SCENIC ROAD & CYBER-TRUCK CANVAS */}
-        <div className="w-full relative h-48 bg-gradient-to-b from-[#070B14] via-[#0D1B2A] to-[#121214] rounded-2xl border border-white/15 overflow-hidden flex flex-col justify-between p-3.5 my-1 shadow-2xl">
+        <div className="w-full relative h-40 bg-gradient-to-b from-[#070B14] via-[#0D1B2A] to-[#121214] rounded-2xl border border-white/15 overflow-hidden flex flex-col justify-between p-3 my-1 shadow-2xl">
           {/* Starfield Backdrop */}
           <div className="absolute top-2 left-4 right-4 h-12 flex justify-between pointer-events-none opacity-60 star-field">
             <span className="text-[8px] text-white">✦</span>
@@ -111,35 +205,10 @@ export default function TruckTransitModal({
           </div>
 
           {/* Andean Mountain Silhouette Backdrop */}
-          <div className="absolute top-5 left-0 right-0 h-20 opacity-30 pointer-events-none flex items-end justify-between px-1">
+          <div className="absolute top-4 left-0 right-0 h-16 opacity-30 pointer-events-none flex items-end justify-between px-1">
             <svg viewBox="0 0 500 80" className="w-full h-full fill-slate-700 stroke-[#E84142]/40" strokeWidth="1">
               <path d="M0,80 L40,50 L90,65 L150,30 L220,70 L300,20 L370,60 L440,35 L500,80 Z" />
             </svg>
-          </div>
-
-          {/* Location Waypoints Header */}
-          <div className="relative z-10 flex justify-between text-[10px] font-mono text-slate-400 pt-1">
-            <span
-              className={`transition-colors duration-300 ${
-                progress < 40 ? "text-[#E84142] font-black underline" : "text-[#10B981] font-bold"
-              }`}
-            >
-              🇨🇱 Arica (Puerto)
-            </span>
-            <span
-              className={`transition-colors duration-300 ${
-                progress >= 40 && progress < 85 ? "text-[#E84142] font-black underline" : ""
-              }`}
-            >
-              🏔️ Tambo Quemado (Aduana)
-            </span>
-            <span
-              className={`transition-colors duration-300 ${
-                progress >= 85 ? "text-[#10B981] font-black underline" : ""
-              }`}
-            >
-              🇧🇴 Santa Cruz (Destino)
-            </span>
           </div>
 
           {/* CYBER-TRUCK & ANIMATED ROAD SECTION */}
@@ -291,7 +360,7 @@ export default function TruckTransitModal({
         </div>
 
         {/* PROGRESS BAR & PERCENTAGE */}
-        <div className="w-full flex flex-col gap-1.5 my-3">
+        <div className="w-full flex flex-col gap-1.5 my-2.5">
           <div className="flex justify-between text-[11px] font-mono text-slate-200 font-medium">
             <span>{isCompleted ? "✓ Ruta bioceánica completada" : "Transitando tramo Tambo Quemado..."}</span>
             <span className="text-[#E84142] font-black">{Math.round(progress)}%</span>
