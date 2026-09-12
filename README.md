@@ -70,8 +70,8 @@ npm run dev
 
 | Contract | Address |
 |---|---|
-| `TradeEscrow` | _pending — update after deploy_ |
-| `ERC2771Forwarder` | _pending — update after deploy_ |
+| `TradeEscrow` | [`0xbA4164F1829b8E1eEf0F78b6AEe517D8fdaC34Ee`](https://testnet.snowtrace.io/address/0xbA4164F1829b8E1eEf0F78b6AEe517D8fdaC34Ee) |
+| `ERC2771Forwarder` | _pending — update once confirmed_ |
 | USDC (Circle, testnet) | `0x5425890298aed601595a70AB815c96711a31Bc65` |
 
 ## Tracks
