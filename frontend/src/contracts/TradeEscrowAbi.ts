@@ -2,7 +2,11 @@ export const TRADE_ESCROW_ABI = [
     {
         "type":  "constructor",
         "inputs":  [
-
+                       {
+                           "name":  "trustedForwarder",
+                           "type":  "address",
+                           "internalType":  "address"
+                       }
                    ],
         "stateMutability":  "nonpayable"
     },
@@ -74,6 +78,21 @@ export const TRADE_ESCROW_ABI = [
                         }
                     ],
         "stateMutability":  "nonpayable"
+    },
+    {
+        "type":  "function",
+        "name":  "customsOracle",
+        "inputs":  [
+
+                   ],
+        "outputs":  [
+                        {
+                            "name":  "",
+                            "type":  "address",
+                            "internalType":  "address"
+                        }
+                    ],
+        "stateMutability":  "view"
     },
     {
         "type":  "function",
@@ -152,6 +171,25 @@ export const TRADE_ESCROW_ABI = [
                                                    "internalType":  "uint256"
                                                }
                                            ]
+                        }
+                    ],
+        "stateMutability":  "view"
+    },
+    {
+        "type":  "function",
+        "name":  "isTrustedForwarder",
+        "inputs":  [
+                       {
+                           "name":  "forwarder",
+                           "type":  "address",
+                           "internalType":  "address"
+                       }
+                   ],
+        "outputs":  [
+                        {
+                            "name":  "",
+                            "type":  "bool",
+                            "internalType":  "bool"
                         }
                     ],
         "stateMutability":  "view"
@@ -308,6 +346,21 @@ export const TRADE_ESCROW_ABI = [
     },
     {
         "type":  "function",
+        "name":  "setCustomsOracle",
+        "inputs":  [
+                       {
+                           "name":  "newOracle",
+                           "type":  "address",
+                           "internalType":  "address"
+                       }
+                   ],
+        "outputs":  [
+
+                    ],
+        "stateMutability":  "nonpayable"
+    },
+    {
+        "type":  "function",
         "name":  "setFeeBps",
         "inputs":  [
                        {
@@ -400,6 +453,40 @@ export const TRADE_ESCROW_ABI = [
                         }
                     ],
         "stateMutability":  "view"
+    },
+    {
+        "type":  "function",
+        "name":  "trustedForwarder",
+        "inputs":  [
+
+                   ],
+        "outputs":  [
+                        {
+                            "name":  "",
+                            "type":  "address",
+                            "internalType":  "address"
+                        }
+                    ],
+        "stateMutability":  "view"
+    },
+    {
+        "type":  "event",
+        "name":  "CustomsOracleUpdated",
+        "inputs":  [
+                       {
+                           "name":  "oldOracle",
+                           "type":  "address",
+                           "indexed":  false,
+                           "internalType":  "address"
+                       },
+                       {
+                           "name":  "newOracle",
+                           "type":  "address",
+                           "indexed":  false,
+                           "internalType":  "address"
+                       }
+                   ],
+        "anonymous":  false
     },
     {
         "type":  "event",
