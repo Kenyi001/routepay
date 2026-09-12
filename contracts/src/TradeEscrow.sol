@@ -6,11 +6,16 @@ import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol
 import {ECDSA} from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import {MessageHashUtils} from "@openzeppelin/contracts/utils/cryptography/MessageHashUtils.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
+import {ERC2771Context} from "@openzeppelin/contracts/metatx/ERC2771Context.sol";
+import {Context} from "@openzeppelin/contracts/utils/Context.sol";
 
 /// @title RoutePay TradeEscrow
 /// @notice Cross-border freight payment escrow secured by Tangem NFC cryptographic proof of physical delivery.
 /// @dev Designed for Avalanche Fuji C-Chain with Pollar on-ramp and Tangem EIP-712 tap release.
-contract TradeEscrow is ReentrancyGuard, Ownable {
+/// ERC-2771 meta-tx support lets a relayer submit `createAndFundOrder` on the importer's
+/// behalf (paying gas) while `_msgSender()` still resolves to the real importer — see
+/// docs/GASLESS-RELAYER.md for the full flow with ERC-2612 permit.
+contract TradeEscrow is ReentrancyGuard, Ownable, ERC2771Context {
     using SafeERC20 for IERC20;
 
     enum EscrowStatus {
@@ -41,6 +46,12 @@ contract TradeEscrow is ReentrancyGuard, Ownable {
     uint256 public feeBps = 50;
     address public treasury;
 
+    /// @notice Address authorized to confirm customs transit on behalf of an authenticated
+    /// MIC/DTA relay. Bolivia (SUMA) and Chile (SITRAD) expose no public, unauthenticated
+    /// API for this — the real integration is B2G/EDI with despachante credentials, so this
+    /// role stands in for that authenticated relay until one is wired up.
+    address public customsOracle;
+
     mapping(uint256 => EscrowOrder) public orders;
     uint256 public nextOrderId;
 
@@ -52,6 +63,7 @@ contract TradeEscrow is ReentrancyGuard, Ownable {
     event DisputeResolved(uint256 indexed orderId, bool refundedImporter, uint256 amount);
     event FeeBpsUpdated(uint256 oldFeeBps, uint256 newFeeBps);
     event TreasuryUpdated(address oldTreasury, address newTreasury);
+    event CustomsOracleUpdated(address oldOracle, address newOracle);
 
     error InvalidAddress();
     error InvalidAmount();
@@ -62,7 +74,7 @@ contract TradeEscrow is ReentrancyGuard, Ownable {
     error InvalidSignature();
     error FeeTooHigh();
 
-    constructor() Ownable(msg.sender) {
+    constructor(address trustedForwarder) Ownable(msg.sender) ERC2771Context(trustedForwarder) {
         treasury = msg.sender;
         nextOrderId = 1;
     }
@@ -85,12 +97,13 @@ contract TradeEscrow is ReentrancyGuard, Ownable {
         if (amount == 0) revert InvalidAmount();
         if (durationSeconds == 0) revert InvalidDuration();
 
+        address importer = _msgSender();
         orderId = nextOrderId++;
         uint256 deadline = block.timestamp + durationSeconds;
 
         orders[orderId] = EscrowOrder({
             orderId: orderId,
-            importer: msg.sender,
+            importer: importer,
             carrier: carrier,
             token: token,
             amount: amount,
@@ -100,9 +113,11 @@ contract TradeEscrow is ReentrancyGuard, Ownable {
             createdAt: block.timestamp
         });
 
-        IERC20(token).safeTransferFrom(msg.sender, address(this), amount);
+        // `importer`, not the relayer forwarding this call, is who must hold the balance
+        // and have granted allowance (via a prior or same-bundle ERC-2612 permit).
+        IERC20(token).safeTransferFrom(importer, address(this), amount);
 
-        emit OrderFunded(orderId, msg.sender, carrier, amount);
+        emit OrderFunded(orderId, importer, carrier, amount);
     }
 
     /// @notice Carrier signals departure and cargo transit commencement.
@@ -112,7 +127,9 @@ contract TradeEscrow is ReentrancyGuard, Ownable {
         if (order.status != EscrowStatus.Funded) {
             revert InvalidStatus(order.status, EscrowStatus.Funded);
         }
-        if (msg.sender != order.carrier && msg.sender != owner()) {
+        address sender = _msgSender();
+        bool isCustomsOracle = customsOracle != address(0) && sender == customsOracle;
+        if (sender != order.carrier && sender != owner() && !isCustomsOracle) {
             revert Unauthorized();
         }
 
@@ -167,7 +184,8 @@ contract TradeEscrow is ReentrancyGuard, Ownable {
         if (block.timestamp < order.deadline) {
             revert DeadlineNotPassed(block.timestamp, order.deadline);
         }
-        if (msg.sender != order.importer && msg.sender != owner()) {
+        address sender = _msgSender();
+        if (sender != order.importer && sender != owner()) {
             revert Unauthorized();
         }
 
@@ -186,12 +204,13 @@ contract TradeEscrow is ReentrancyGuard, Ownable {
         if (order.status != EscrowStatus.Funded && order.status != EscrowStatus.InTransit) {
             revert InvalidStatus(order.status, EscrowStatus.InTransit);
         }
-        if (msg.sender != order.importer && msg.sender != order.carrier && msg.sender != owner()) {
+        address sender = _msgSender();
+        if (sender != order.importer && sender != order.carrier && sender != owner()) {
             revert Unauthorized();
         }
 
         order.status = EscrowStatus.Disputed;
-        emit OrderDisputed(orderId, msg.sender);
+        emit OrderDisputed(orderId, sender);
     }
 
     /// @notice Resolves an open dispute by the contract arbiter / owner.
@@ -234,6 +253,15 @@ contract TradeEscrow is ReentrancyGuard, Ownable {
         if (newTreasury == address(0)) revert InvalidAddress();
         emit TreasuryUpdated(treasury, newTreasury);
         treasury = newTreasury;
+    }
+
+    /// @notice Updates the authorized MIC/DTA customs relay address.
+    /// @dev See `customsOracle` docs — stands in for an authenticated despachante relay.
+    /// @param newOracle New customs oracle address.
+    function setCustomsOracle(address newOracle) external onlyOwner {
+        if (newOracle == address(0)) revert InvalidAddress();
+        emit CustomsOracleUpdated(customsOracle, newOracle);
+        customsOracle = newOracle;
     }
 
     /// @notice Convenience view helper to query full order details.

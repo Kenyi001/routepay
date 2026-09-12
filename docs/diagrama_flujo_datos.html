@@ -1,0 +1,777 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>RoutePay — Flujos de Información Paso a Paso (TradeEscrow.sol)</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+  <style>
+    :root {
+      --bg-dark: #070a12;
+      --card-bg: rgba(19, 27, 46, 0.75);
+      --border-color: rgba(255, 255, 255, 0.1);
+      --accent-red: #E84142;
+      --accent-emerald: #10B981;
+      --accent-gold: #F59E0B;
+      --accent-cyan: #06b6d4;
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background-color: var(--bg-dark);
+      background-image: 
+        radial-gradient(circle at 15% 15%, rgba(232, 65, 66, 0.08) 0%, transparent 40%),
+        radial-gradient(circle at 85% 85%, rgba(16, 185, 129, 0.08) 0%, transparent 40%);
+      color: var(--text-main);
+      font-family: 'Outfit', sans-serif;
+      min-height: 100vh;
+      padding: 2rem 1.5rem;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .container {
+      max-width: 1200px;
+      width: 100%;
+      position: relative;
+    }
+
+    header {
+      text-align: center;
+      margin-bottom: 2rem;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 16px;
+      border-radius: 9999px;
+      background: rgba(16, 185, 129, 0.15);
+      border: 1px solid rgba(16, 185, 129, 0.4);
+      color: var(--accent-emerald);
+      font-size: 0.85rem;
+      font-weight: 600;
+      margin-bottom: 1rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    h1 {
+      font-size: 2.3rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      margin-bottom: 0.5rem;
+      background: linear-gradient(135deg, #ffffff 0%, #cbd5e1 50%, #94a3b8 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    p.subtitle {
+      color: var(--text-muted);
+      font-size: 1.05rem;
+      max-width: 760px;
+      margin: 0 auto;
+      line-height: 1.6;
+    }
+
+    /* Tabs de navegación */
+    .tabs-nav {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      justify-content: center;
+      margin-bottom: 2rem;
+      background: rgba(15, 23, 42, 0.6);
+      padding: 8px;
+      border-radius: 14px;
+      border: 1px solid var(--border-color);
+    }
+
+    .tab-btn {
+      background: transparent;
+      border: 1px solid transparent;
+      color: var(--text-muted);
+      padding: 10px 16px;
+      border-radius: 10px;
+      font-family: inherit;
+      font-size: 0.92rem;
+      font-weight: 600;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      transition: all 0.2s ease;
+    }
+
+    .tab-btn:hover {
+      color: var(--text-main);
+      background: rgba(255, 255, 255, 0.05);
+    }
+
+    .tab-btn.active {
+      background: rgba(16, 185, 129, 0.15);
+      border-color: rgba(16, 185, 129, 0.4);
+      color: var(--accent-emerald);
+      box-shadow: 0 4px 15px rgba(16, 185, 129, 0.2);
+    }
+
+    /* Contenedor de las pestañas - EVITA BUG DE DISPLAY:NONE EN MERMAID */
+    .panes-wrapper {
+      position: relative;
+      width: 100%;
+      min-height: 550px;
+    }
+
+    .tab-pane {
+      display: block;
+      visibility: hidden;
+      position: absolute;
+      top: -99999px;
+      left: -99999px;
+      width: 100%;
+      opacity: 0;
+      transition: opacity 0.25s ease-in-out;
+    }
+
+    .tab-pane.active {
+      visibility: visible;
+      position: relative;
+      top: 0;
+      left: 0;
+      opacity: 1;
+    }
+
+    .process-card {
+      background: var(--card-bg);
+      border: 1px solid var(--border-color);
+      backdrop-filter: blur(16px);
+      border-radius: 18px;
+      padding: 2rem;
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+      margin-bottom: 2rem;
+    }
+
+    .process-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      flex-wrap: wrap;
+      gap: 1rem;
+      margin-bottom: 1.5rem;
+      border-bottom: 1px solid var(--border-color);
+      padding-bottom: 1.25rem;
+    }
+
+    .process-title h2 {
+      font-size: 1.4rem;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      color: #fff;
+    }
+
+    .process-title p {
+      color: var(--text-muted);
+      font-size: 0.95rem;
+      margin-top: 4px;
+    }
+
+    .tag {
+      background: rgba(56, 189, 248, 0.12);
+      border: 1px solid rgba(56, 189, 248, 0.3);
+      color: #38bdf8;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.85rem;
+      padding: 5px 12px;
+      border-radius: 6px;
+    }
+
+    .action-btn {
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid var(--border-color);
+      color: var(--text-main);
+      padding: 8px 14px;
+      border-radius: 8px;
+      font-family: inherit;
+      font-size: 0.85rem;
+      font-weight: 500;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.2s ease;
+    }
+
+    .action-btn:hover {
+      background: rgba(255, 255, 255, 0.15);
+      border-color: rgba(255, 255, 255, 0.3);
+    }
+
+    /* Contenedor del Diagrama */
+    .mini-diagram-box {
+      background: rgba(11, 15, 25, 0.85);
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      border-radius: 12px;
+      padding: 2rem 1.5rem;
+      margin-bottom: 1.5rem;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      overflow-x: auto;
+      min-height: 180px;
+    }
+
+    .mini-diagram-box svg {
+      max-width: 100%;
+      height: auto;
+      filter: drop-shadow(0 6px 12px rgba(0, 0, 0, 0.5));
+    }
+
+    /* Columnas Entra / Guarda / Sale */
+    .flow-columns {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 1rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .col-box {
+      background: rgba(15, 23, 42, 0.6);
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      padding: 1.25rem;
+    }
+
+    .col-box.input-box { border-left: 4px solid var(--accent-cyan); }
+    .col-box.storage-box { border-left: 4px solid var(--accent-gold); }
+    .col-box.output-box { border-left: 4px solid var(--accent-emerald); }
+
+    .col-title {
+      font-size: 0.92rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 0.75rem;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .col-box.input-box .col-title { color: var(--accent-cyan); }
+    .col-box.storage-box .col-title { color: var(--accent-gold); }
+    .col-box.output-box .col-title { color: var(--accent-emerald); }
+
+    .col-box ul {
+      list-style: none;
+      font-size: 0.9rem;
+      color: var(--text-muted);
+      line-height: 1.6;
+    }
+
+    .col-box li {
+      margin-bottom: 6px;
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+    }
+
+    .col-box li::before {
+      content: "•";
+      color: rgba(255, 255, 255, 0.4);
+      font-weight: bold;
+    }
+
+    .col-box code {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.8rem;
+      background: rgba(255, 255, 255, 0.08);
+      padding: 1px 5px;
+      border-radius: 4px;
+      color: #e2e8f0;
+    }
+
+    .real-example {
+      background: rgba(245, 158, 11, 0.08);
+      border: 1px solid rgba(245, 158, 11, 0.25);
+      border-radius: 12px;
+      padding: 1.25rem 1.5rem;
+      display: flex;
+      gap: 12px;
+      align-items: flex-start;
+    }
+
+    .real-example .icon { font-size: 1.5rem; }
+    .real-example p { font-size: 0.9rem; color: #fde68a; line-height: 1.5; }
+    .real-example strong { color: #ffffff; }
+
+    .toast {
+      position: fixed;
+      bottom: 2rem;
+      right: 2rem;
+      background: #10B981;
+      color: white;
+      padding: 12px 20px;
+      border-radius: 8px;
+      font-weight: 600;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.4);
+      opacity: 0;
+      transform: translateY(20px);
+      transition: all 0.3s ease;
+      pointer-events: none;
+      z-index: 1000;
+    }
+
+    .toast.show { opacity: 1; transform: translateY(0); }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <header>
+      <div class="badge">🌐 RoutePay — Flujo Didáctico de Datos</div>
+      <h1>Procesos del Backend en Partes Claras</h1>
+      <p class="subtitle">
+        Para entender el contrato <code>TradeEscrow.sol</code>, miralo como una caja fuerte inteligente con <strong>5 momentos clave</strong>. Selecciona cada pestaña para ver exactamente <em>qué entra</em>, <em>qué se guarda</em> y <em>qué sale</em>.
+      </p>
+    </header>
+
+    <!-- Barra de Pestañas -->
+    <div class="tabs-nav">
+      <button class="tab-btn active" onclick="switchTab(0)">1. 📦 Creación y Depósito</button>
+      <button class="tab-btn" onclick="switchTab(1)">2. 🚚 Inicio de Tránsito</button>
+      <button class="tab-btn" onclick="switchTab(2)">3. 💳 Tap Tangem NFC (Pago)</button>
+      <button class="tab-btn" onclick="switchTab(3)">4. ⏱️ Timeout / Reembolso</button>
+      <button class="tab-btn" onclick="switchTab(4)">5. ⚖️ Disputa en Frontera</button>
+      <button class="tab-btn" onclick="switchTab(5)">🌐 Mapa Completo</button>
+    </div>
+
+    <div class="panes-wrapper">
+
+      <!-- PESTAÑA 1 -->
+      <div class="tab-pane active" id="pane-0">
+        <div class="process-card">
+          <div class="process-header">
+            <div class="process-title">
+              <h2>Paso 1: Creación del Flete y Depósito</h2>
+              <p>El importador deposita el dinero del flete y registra los datos del viaje en el contrato.</p>
+            </div>
+            <div>
+              <span class="tag">function createAndFundOrder(...)</span>
+            </div>
+          </div>
+
+          <div class="mini-diagram-box" id="graph-0"></div>
+
+          <div class="flow-columns">
+            <div class="col-box input-box">
+              <div class="col-title">📥 ¿Qué Información Entra?</div>
+              <ul>
+                <li><code>carrier</code>: Billetera del transportista.</li>
+                <li><code>token</code>: Token USDC en Avalanche Fuji.</li>
+                <li><code>amount</code>: 2,500 USDC (monto acordado).</li>
+                <li><code>cargoManifestHash</code>: Huella digital del documento MIC/DTA.</li>
+                <li><code>durationSeconds</code>: Tiempo máximo de viaje (ej. 5 días).</li>
+              </ul>
+            </div>
+            <div class="col-box storage-box">
+              <div class="col-title">💾 ¿Qué se Guarda en la Orden?</div>
+              <ul>
+                <li>Se asigna un nuevo <code>orderId = 1</code>.</li>
+                <li>Estado inicial: <code>EscrowStatus.Funded</code>.</li>
+                <li>Fecha límite calculada: <code>deadline = ahora + 5 días</code>.</li>
+                <li>Se vincula el depósito a esta orden específica.</li>
+              </ul>
+            </div>
+            <div class="col-box output-box">
+              <div class="col-title">📤 ¿Qué Sale del Contrato?</div>
+              <ul>
+                <li><strong>Tokens:</strong> 2,500 USDC pasan a la bóveda del contrato.</li>
+                <li><strong>Evento público:</strong> <code>OrderFunded(orderId, importer, carrier, amount)</code>.</li>
+              </ul>
+            </div>
+          </div>
+
+          <div class="real-example">
+            <span class="icon">💡</span>
+            <p>
+              <strong>En la vida real:</strong> Una importadora en Santa Cruz contrata a un camionero en Arica. Deposita $2,500 USDC en el contrato inteligente. El dinero queda protegido en custodia neutra: nadie puede retirarlo hasta que la carga llegue.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <!-- PESTAÑA 2 -->
+      <div class="tab-pane" id="pane-1">
+        <div class="process-card">
+          <div class="process-header">
+            <div class="process-title">
+              <h2>Paso 2: Inicio de Tránsito en Carretera</h2>
+              <p>El transportista carga el camión y le avisa al contrato que ya inició el viaje hacia destino.</p>
+            </div>
+            <div>
+              <span class="tag">function startTransit(orderId)</span>
+            </div>
+          </div>
+
+          <div class="mini-diagram-box" id="graph-1"></div>
+
+          <div class="flow-columns">
+            <div class="col-box input-box">
+              <div class="col-title">📥 ¿Qué Información Entra?</div>
+              <ul>
+                <li><code>orderId</code>: El identificador único de la orden (ej. <code>1</code>).</li>
+                <li><code>msg.sender</code>: La dirección de billetera que firma la transacción.</li>
+              </ul>
+            </div>
+            <div class="col-box storage-box">
+              <div class="col-title">💾 ¿Qué se Guarda en la Orden?</div>
+              <ul>
+                <li>Verifica que la orden esté previamente en <code>Funded</code>.</li>
+                <li>El estado cambia a: <code>EscrowStatus.InTransit</code>.</li>
+                <li>La carga queda oficialmente registrada en viaje hacia Bolivia.</li>
+              </ul>
+            </div>
+            <div class="col-box output-box">
+              <div class="col-title">📤 ¿Qué Sale del Contrato?</div>
+              <ul>
+                <li><strong>Dinero:</strong> Nada se mueve aún. Los 2,500 USDC siguen en custodia.</li>
+                <li><strong>Evento público:</strong> <code>OrderInTransit(orderId)</code> para que todos vean que el camión está en ruta.</li>
+              </ul>
+            </div>
+          </div>
+
+          <div class="real-example">
+            <span class="icon">💡</span>
+            <p>
+              <strong>En la vida real:</strong> El transportista arranca en el puerto de Arica rumbo a Tambo Quemado. Presiona "Iniciar Tránsito" en la app para confirmar que la mercancía está en camino.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <!-- PESTAÑA 3 -->
+      <div class="tab-pane" id="pane-2">
+        <div class="process-card">
+          <div class="process-header">
+            <div class="process-title">
+              <h2>Paso 3: Llegada a Destino y Tap Tangem NFC (Liquidación)</h2>
+              <p>El receptor de la carga apoya su tarjeta física Tangem. El contrato valida la firma y paga en segundos.</p>
+            </div>
+            <div>
+              <span class="tag">function settleWithTangemTap(...)</span>
+            </div>
+          </div>
+
+          <div class="mini-diagram-box" id="graph-2"></div>
+
+          <div class="flow-columns">
+            <div class="col-box input-box">
+              <div class="col-title">📥 ¿Qué Información Entra?</div>
+              <ul>
+                <li><code>orderId</code>: El número de la orden (<code>1</code>).</li>
+                <li><code>signature</code>: Firma criptográfica del chip EAL6+ de la tarjeta física Tangem.</li>
+              </ul>
+            </div>
+            <div class="col-box storage-box">
+              <div class="col-title">💾 ¿Qué se Guarda en la Orden?</div>
+              <ul>
+                <li>El contrato recupera el firmante con <code>ECDSA.tryRecover</code>.</li>
+                <li>Verifica que corresponda al importador / receptor autorizado.</li>
+                <li>El estado muta a: <code>EscrowStatus.Delivered</code>.</li>
+              </ul>
+            </div>
+            <div class="col-box output-box">
+              <div class="col-title">📤 ¿Qué Sale del Contrato?</div>
+              <ul>
+                <li><strong>Pago Transportista (99.5%):</strong> $2,487.50 USDC transferidos al instante.</li>
+                <li><strong>Comisión Protocolo (0.5%):</strong> $12.50 USDC enviados a la tesorería.</li>
+                <li><strong>Evento público:</strong> <code>OrderSettled(orderId, carrier, payout, fee)</code>.</li>
+              </ul>
+            </div>
+          </div>
+
+          <div class="real-example">
+            <span class="icon">💡</span>
+            <p>
+              <strong>En la vida real:</strong> El camión llega al almacén en Santa Cruz. El encargado apoya la tarjeta Tangem en el teléfono del chofer. En 2 segundos, el chofer tiene sus fondos en su billetera sin intermediarios bancarios ni demoras de semanas.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <!-- PESTAÑA 4 -->
+      <div class="tab-pane" id="pane-3">
+        <div class="process-card">
+          <div class="process-header">
+            <div class="process-title">
+              <h2>Paso 4: Plazo Vencido y Reembolso Seguro</h2>
+              <p>Si el transportista no entrega la carga antes de la fecha límite, el importador recupera su dinero.</p>
+            </div>
+            <div>
+              <span class="tag">function refundOnTimeout(orderId)</span>
+            </div>
+          </div>
+
+          <div class="mini-diagram-box" id="graph-3"></div>
+
+          <div class="flow-columns">
+            <div class="col-box input-box">
+              <div class="col-title">📥 ¿Qué Información Entra?</div>
+              <ul>
+                <li><code>orderId</code>: El número de la orden vencida.</li>
+                <li><code>block.timestamp</code>: La hora y fecha actual de la red blockchain.</li>
+              </ul>
+            </div>
+            <div class="col-box storage-box">
+              <div class="col-title">💾 ¿Qué se Guarda en la Orden?</div>
+              <ul>
+                <li>Comprueba que el tiempo actual superó el <code>deadline</code>.</li>
+                <li>El estado muta a: <code>EscrowStatus.Refunded</code>.</li>
+              </ul>
+            </div>
+            <div class="col-box output-box">
+              <div class="col-title">📤 ¿Qué Sale del Contrato?</div>
+              <ul>
+                <li><strong>Reembolso Total:</strong> El 100% ($2,500 USDC) regresa a la wallet del importador.</li>
+                <li><strong>Evento público:</strong> <code>OrderRefunded(orderId, refundAmount)</code>.</li>
+              </ul>
+            </div>
+          </div>
+
+          <div class="real-example">
+            <span class="icon">💡</span>
+            <p>
+              <strong>En la vida real:</strong> Pasaron los 5 días fijados y la entrega no ocurrió. El importador no pierde sus fondos: el contrato se los reintegra de forma autónoma.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <!-- PESTAÑA 5 -->
+      <div class="tab-pane" id="pane-4">
+        <div class="process-card">
+          <div class="process-header">
+            <div class="process-title">
+              <h2>Paso 5: Contingencia y Disputa Aduanera</h2>
+              <p>Si la carga es retenida en frontera (Tambo Quemado), se congela la orden hasta el arbitraje.</p>
+            </div>
+            <div>
+              <span class="tag">openDispute() & resolveDispute()</span>
+            </div>
+          </div>
+
+          <div class="mini-diagram-box" id="graph-4"></div>
+
+          <div class="flow-columns">
+            <div class="col-box input-box">
+              <div class="col-title">📥 ¿Qué Información Entra?</div>
+              <ul>
+                <li><code>orderId</code>: La orden en conflicto.</li>
+                <li><code>refundImporter</code>: <code>true</code> para reembolsar, o <code>false</code> para pagar al transportista.</li>
+              </ul>
+            </div>
+            <div class="col-box storage-box">
+              <div class="col-title">💾 ¿Qué se Guarda en la Orden?</div>
+              <ul>
+                <li>Al abrir: estado pasa a <code>EscrowStatus.Disputed</code> (fondos congelados).</li>
+                <li>Al resolver: estado pasa a <code>Refunded</code> o <code>Delivered</code>.</li>
+              </ul>
+            </div>
+            <div class="col-box output-box">
+              <div class="col-title">📤 ¿Qué Sale del Contrato?</div>
+              <ul>
+                <li>Si gana importador: 100% devuelto.</li>
+                <li>Si gana transportista: 99.5% liquidado + 0.5% comisión.</li>
+                <li><strong>Evento público:</strong> <code>DisputeResolved(orderId, refundImporter, amount)</code>.</li>
+              </ul>
+            </div>
+          </div>
+
+          <div class="real-example">
+            <span class="icon">💡</span>
+            <p>
+              <strong>En la vida real:</strong> En la frontera chileno-boliviana ocurre un bloqueo. Se abre la disputa para que no expire el plazo mientras se presenta la documentación ante el árbitro.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <!-- PESTAÑA 6: MAPA COMPLETO -->
+      <div class="tab-pane" id="pane-5">
+        <div class="process-card">
+          <div class="process-header">
+            <div class="process-title">
+              <h2>Mapa Global de Flujo de Información</h2>
+              <p>La visión completa con todos los actores y transiciones integradas en un solo esquema.</p>
+            </div>
+            <div>
+              <button class="action-btn" onclick="copyFullMermaid()">📋 Copiar Código Mermaid Completo</button>
+            </div>
+          </div>
+
+          <div class="mini-diagram-box" id="graph-5"></div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <div class="toast" id="toast">¡Código copiado!</div>
+
+  <script>
+    const diagramSources = [
+      // Diagrama 0
+      `flowchart LR
+    IMP["📦 Importador"] -->|"1. Datos: transportista, 2,500 USDC, MIC/DTA"| F["createAndFundOrder()"]
+    IMP -.->|"2. Transfiere 2,500 USDC"| VAULT["🔒 Boveda del Contrato"]
+    F -->|"3. Registra Orden #1 con Estado: Funded"| DB[("Memoria Blockchain")]
+    F -->|"4. Emite Evento"| EV["📢 OrderFunded"]`,
+
+      // Diagrama 1
+      `flowchart LR
+    CAR["🚚 Transportista"] -->|"1. Envia: orderId #1 (aviso de salida)"| F["startTransit()"]
+    F -->|"2. Valida transportista asignado"| VAL{"¿Es el transportista?"}
+    VAL -->|"Si"| DB[("Actualiza Orden #1: Estado InTransit")]
+    F -->|"3. Emite Evento"| EV["📢 OrderInTransit"]`,
+
+      // Diagrama 2
+      `flowchart LR
+    TNG["💳 Tarjeta Tangem (Tap NFC)"] -->|"1. Firma Criptografica EIP-712"| F["settleWithTangemTap()"]
+    F -->|"2. Valida firma del Importador"| VAL{"¿Firma valida?"}
+    VAL -->|"Si"| DB[("Actualiza Orden #1: Estado Delivered")]
+    F -.->|"3. Libera 99.5% ($2,487.50 USDC)"| CAR["🚚 Transportista"]
+    F -.->|"4. Comision 0.5% ($12.50 USDC)"| TREASURY["⚡ Tesoreria RoutePay"]
+    F -->|"5. Emite Evento"| EV["📢 OrderSettled"]`,
+
+      // Diagrama 3
+      `flowchart LR
+    IMP["📦 Importador"] -->|"1. Pide reembolso: orderId #1"| F["refundOnTimeout()"]
+    F -->|"2. Comprueba tiempo"| VAL{"¿Vencio el plazo?"}
+    VAL -->|"Si"| DB[("Actualiza Orden #1: Estado Refunded")]
+    F -.->|"3. Devuelve 100% ($2,500 USDC)"| IMP_W["📦 Wallet Importador"]
+    F -->|"4. Emite Evento"| EV["📢 OrderRefunded"]`,
+
+      // Diagrama 4
+      `flowchart LR
+    PARTE["📦 Importador o 🚚 Transportista"] -->|"1. Alerta retencion en frontera"| F1["openDispute()"]
+    F1 --> DB1[("Orden #1: Estado Disputed")]
+    ARB["⚖️ Arbitro Aduanero"] -->|"2. Dictamen con acta aduanera"| F2["resolveDispute()"]
+    F2 --> DB2[("Orden #1: Estado Final")]
+    F2 -.->|"3. Envia fondos segun fallo"| DEST["Beneficiario Resuelto"]
+    F2 -->|"4. Emite Evento"| EV["📢 DisputeResolved"]`,
+
+      // Diagrama 5
+      `flowchart TD
+    subgraph Actores["👤 Actores"]
+        IMP["📦 Importador"]
+        CAR["🚚 Transportista"]
+        TNG["💳 Tarjeta Tangem"]
+        ARB["⚖️ Arbitro"]
+    end
+
+    subgraph Contrato["⚙️ TradeEscrow.sol"]
+        F1["createAndFundOrder()"]
+        F2["startTransit()"]
+        F3["settleWithTangemTap()"]
+        F4["refundOnTimeout()"]
+        F5["openDispute()"]
+        F6["resolveDispute()"]
+        ST[("orders: Funded a InTransit a Delivered o Refunded")]
+    end
+
+    subgraph Salidas["📤 Salidas"]
+        VAULT["🔒 Boveda Escrow"]
+        PAY["💵 Transportista 99.5%"]
+        FEE["⚡ Fee 0.5%"]
+        REF["↩️ Reembolso 100%"]
+    end
+
+    IMP -->|"1. Crea flete y deposita USDC"| F1
+    IMP -.-> VAULT
+    F1 --> ST
+    CAR -->|"2. Inicia ruta"| F2
+    F2 --> ST
+    TNG -->|"3. Tap NFC confirma entrega"| F3
+    F3 --> ST
+    VAULT -.-> PAY
+    VAULT -.-> FEE
+    IMP -->|"4. Reclama por timeout"| F4
+    F4 --> ST
+    VAULT -.-> REF
+    IMP -.-> F5
+    CAR -.-> F5
+    F5 --> ST
+    ARB -->|"5. Dictamen aduanero"| F6
+    F6 --> ST`
+    ];
+
+    async function initMermaid() {
+      mermaid.initialize({
+        startOnLoad: false,
+        theme: 'dark',
+        themeVariables: {
+          darkMode: true,
+          background: '#0B0F19',
+          primaryColor: '#131B2E',
+          primaryTextColor: '#F8FAFC',
+          primaryBorderColor: '#38BDF8',
+          lineColor: '#94A3B8',
+          secondaryColor: '#1E293B',
+          tertiaryColor: '#0F172A'
+        }
+      });
+
+      for (let i = 0; i < diagramSources.length; i++) {
+        const box = document.getElementById('graph-' + i);
+        try {
+          const { svg } = await mermaid.render('mermaid-svg-' + i, diagramSources[i]);
+          box.innerHTML = svg;
+        } catch (e) {
+          console.error("Error al renderizar diagrama " + i, e);
+          box.innerHTML = `<p style="color:#ef4444; font-family:monospace;">Error renderizando diagrama ${i+1}: ${e.message}</p>`;
+        }
+      }
+    }
+
+    function switchTab(idx) {
+      const btns = document.querySelectorAll('.tab-btn');
+      const panes = document.querySelectorAll('.tab-pane');
+
+      btns.forEach((b, i) => {
+        b.classList.toggle('active', i === idx);
+      });
+
+      panes.forEach((p, i) => {
+        p.classList.toggle('active', i === idx);
+      });
+    }
+
+    function showToast(msg) {
+      const toast = document.getElementById('toast');
+      toast.innerText = msg;
+      toast.classList.add('show');
+      setTimeout(() => toast.classList.remove('show'), 2500);
+    }
+
+    function copyFullMermaid() {
+      navigator.clipboard.writeText(diagramSources[5]).then(() => {
+        showToast("¡Código Mermaid copiado al portapapeles!");
+      });
+    }
+
+    window.addEventListener('DOMContentLoaded', initMermaid);
+  </script>
+</body>
+</html>
