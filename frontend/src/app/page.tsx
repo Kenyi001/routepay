@@ -1,10 +1,22 @@
 "use client";
 
 import React, { useState } from "react";
+import { useWeb3 } from "@/context/Web3Context";
+import { useTradeEscrow } from "@/hooks/useTradeEscrow";
 
 type Role = "importer" | "carrier" | "warehouse";
 
 export default function RoutePayApp() {
+  const { address, isConnected, isConnecting, connect, disconnect } = useWeb3();
+  const {
+    isLoading,
+    txHash,
+    createAndFundOrder,
+    startTransit,
+    settleWithTangemTap,
+    explorerUrl,
+  } = useTradeEscrow();
+
   const [role, setRole] = useState<Role>("importer");
   const [orderStatus, setOrderStatus] = useState<"none" | "funded" | "in_transit" | "settled">("none");
   const [isScanningNfc, setIsScanningNfc] = useState(false);
@@ -16,18 +28,29 @@ export default function RoutePayApp() {
   const [destination] = useState("Santa Cruz de la Sierra, Bolivia");
   const [frightAmount, setFrightAmount] = useState("2500");
   const [manifestId] = useState("MIC-DTA-2026-AR-BO-0911");
-  const [carrierAddress] = useState("0x71C...Carrier42");
+  const [carrierAddress] = useState("0x71C8F794B325261EC9dB43bAf6e5a0D6C11b2E42");
 
   const protocolFee = (parseFloat(frightAmount || "0") * 0.005).toFixed(2);
   const carrierPayout = (parseFloat(frightAmount || "0") * 0.995).toFixed(2);
 
-  const handleCreateOrder = () => {
-    setOrderStatus("funded");
-    setRole("carrier");
+  const handleCreateOrder = async () => {
+    const res = await createAndFundOrder({
+      carrier: carrierAddress,
+      amountUsd: parseFloat(frightAmount || "0"),
+      manifestId,
+      durationDays: 7,
+    });
+    if (res.success) {
+      setOrderStatus("funded");
+      setRole("carrier");
+    }
   };
 
-  const handleStartTransit = () => {
-    setOrderStatus("in_transit");
+  const handleStartTransit = async () => {
+    const res = await startTransit(BigInt(1));
+    if (res.success) {
+      setOrderStatus("in_transit");
+    }
   };
 
   const handleTangemTap = async () => {
@@ -35,13 +58,24 @@ export default function RoutePayApp() {
     setNfcError(null);
 
     // Attempt Web NFC if supported (Chrome on Android)
-    const win = typeof window !== "undefined" ? (window as unknown as { NDEFReader?: new () => { scan: () => Promise<void>; onreading: (() => void) | null; onreadingerror: (() => void) | null } }) : null;
+    const win =
+      typeof window !== "undefined"
+        ? (window as unknown as {
+            NDEFReader?: new () => {
+              scan: () => Promise<void>;
+              onreading: (() => void) | null;
+              onreadingerror: (() => void) | null;
+            };
+          })
+        : null;
+
     if (win && win.NDEFReader) {
       try {
         const ndef = new win.NDEFReader();
         await ndef.scan();
-        ndef.onreading = () => {
+        ndef.onreading = async () => {
           setIsScanningNfc(false);
+          await settleWithTangemTap(BigInt(1));
           setTapSuccess(true);
           setOrderStatus("settled");
         };
@@ -55,9 +89,10 @@ export default function RoutePayApp() {
       }
     }
 
-    // Simulación de fallback para demo en desktop o entornos sin NFC físico
-    setTimeout(() => {
+    // High-fidelity fallback for pitch demo
+    setTimeout(async () => {
       setIsScanningNfc(false);
+      await settleWithTangemTap(BigInt(1));
       setTapSuccess(true);
       setOrderStatus("settled");
     }, 1800);
@@ -67,7 +102,7 @@ export default function RoutePayApp() {
     <main className="min-h-screen bg-[#080c15] text-slate-100 flex flex-col items-center justify-start p-4 sm:p-6">
       {/* Container móvil centrado (PWA Experience) */}
       <div className="w-full max-w-md flex flex-col gap-5">
-        {/* Header con Logo y Conexión */}
+        {/* Header con Logo y Conexión Web3 */}
         <header className="flex items-center justify-between py-2 border-b border-white/10">
           <div className="flex items-center gap-2">
             <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-cyan-500 to-emerald-400 flex items-center justify-center font-bold text-black text-lg shadow-lg shadow-cyan-500/20">
@@ -82,10 +117,28 @@ export default function RoutePayApp() {
           </div>
 
           <div className="flex items-center gap-2">
-            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-mono bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
-              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-              Fuji Testnet
+            <span className="hidden sm:inline-flex items-center gap-1.5 px-2 py-1 rounded-full text-[10px] font-mono bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+              Fuji
             </span>
+
+            {isConnected && address ? (
+              <button
+                onClick={disconnect}
+                className="px-2.5 py-1 rounded-lg bg-slate-900 border border-white/15 text-[11px] font-mono text-slate-300 hover:border-red-400 hover:text-red-300 transition-colors"
+                title="Desconectar Billetera"
+              >
+                {`${address.slice(0, 5)}...${address.slice(-4)}`}
+              </button>
+            ) : (
+              <button
+                onClick={connect}
+                disabled={isConnecting}
+                className="px-3 py-1.5 rounded-lg bg-gradient-to-r from-cyan-500 to-emerald-400 text-black font-semibold text-xs shadow-md shadow-cyan-500/20 hover:opacity-90 active:scale-95 transition-all"
+              >
+                {isConnecting ? "Conectando..." : "Conectar Wallet"}
+              </button>
+            )}
           </div>
         </header>
 
@@ -175,14 +228,25 @@ export default function RoutePayApp() {
             {orderStatus === "none" ? (
               <button
                 onClick={handleCreateOrder}
-                className="w-full py-3 rounded-xl bg-gradient-to-r from-cyan-500 to-emerald-400 text-black font-bold text-sm shadow-lg shadow-cyan-500/25 hover:opacity-95 active:scale-[0.98] transition-all"
+                disabled={isLoading}
+                className="w-full py-3 rounded-xl bg-gradient-to-r from-cyan-500 to-emerald-400 text-black font-bold text-sm shadow-lg shadow-cyan-500/25 hover:opacity-95 active:scale-[0.98] transition-all disabled:opacity-50"
               >
-                Bloquear Fondos con Pollar (QR / USDC)
+                {isLoading ? "Procesando en Avalanche Fuji..." : "Bloquear Fondos con Pollar (QR / USDC)"}
               </button>
             ) : (
               <div className="p-3 bg-emerald-500/10 border border-emerald-500/30 rounded-xl text-center">
-                <p className="text-xs text-emerald-400 font-medium">✓ Orden #101 Fondeada Exitosamente</p>
-                <p className="text-[11px] text-slate-400 mt-0.5">Fondos en custodia en Avalanche Fuji</p>
+                <p className="text-xs text-emerald-400 font-medium">✓ Orden #1 Fondeada Exitosamente</p>
+                <p className="text-[11px] text-slate-400 mt-0.5">Fondos custodiados en Avalanche Fuji</p>
+                {txHash && (
+                  <a
+                    href={`${explorerUrl}/tx/${txHash}`}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="inline-block mt-1 text-[10px] font-mono text-cyan-400 hover:underline"
+                  >
+                    Ver Tx en SnowTrace ↗
+                  </a>
+                )}
               </div>
             )}
           </div>
@@ -194,7 +258,7 @@ export default function RoutePayApp() {
             <div className="flex items-center justify-between">
               <h2 className="font-semibold text-sm text-slate-200">Panel del Chofer</h2>
               <span className="text-[11px] px-2 py-0.5 rounded bg-amber-500/10 text-amber-300 border border-amber-500/20">
-                Orden #101
+                Orden #1
               </span>
             </div>
 
@@ -226,7 +290,9 @@ export default function RoutePayApp() {
               <div className="flex items-center gap-3 text-cyan-400">
                 <div className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse"></div>
                 <span className="flex-1">Tambo Quemado (Aduana Frontera)</span>
-                <span className="text-[10px] text-cyan-400 font-medium">En Tránsito</span>
+                <span className="text-[10px] text-cyan-400 font-medium">
+                  {orderStatus === "in_transit" ? "En Tránsito" : "Esperando Salida"}
+                </span>
               </div>
 
               <div className="flex items-center gap-3 text-slate-500">
@@ -239,9 +305,10 @@ export default function RoutePayApp() {
             {orderStatus === "funded" && (
               <button
                 onClick={handleStartTransit}
-                className="w-full py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-medium text-xs border border-white/10 transition-all"
+                disabled={isLoading}
+                className="w-full py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-medium text-xs border border-white/10 transition-all disabled:opacity-50"
               >
-                Confirmar Salida de Puerto (Iniciar Tránsito)
+                {isLoading ? "Registrando salida en Fuji..." : "Confirmar Salida de Puerto (Iniciar Tránsito)"}
               </button>
             )}
 
@@ -258,6 +325,16 @@ export default function RoutePayApp() {
               <div className="p-3 bg-emerald-500/10 border border-emerald-500/30 rounded-xl text-center">
                 <p className="text-xs text-emerald-400 font-bold">✓ ¡Flete Cobrado con Éxito!</p>
                 <p className="text-[11px] text-slate-400 mt-0.5">Saldo transferido a tu billetera</p>
+                {txHash && (
+                  <a
+                    href={`${explorerUrl}/tx/${txHash}`}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="inline-block mt-1 text-[10px] font-mono text-cyan-400 hover:underline"
+                  >
+                    Ver Tx en SnowTrace ↗
+                  </a>
+                )}
               </div>
             )}
           </div>
@@ -304,8 +381,8 @@ export default function RoutePayApp() {
             {!tapSuccess ? (
               <button
                 onClick={handleTangemTap}
-                disabled={isScanningNfc}
-                className="w-full py-3.5 rounded-xl bg-gradient-to-r from-cyan-500 to-emerald-400 text-black font-extrabold text-sm shadow-lg shadow-cyan-500/30 hover:opacity-95 active:scale-[0.98] transition-all"
+                disabled={isScanningNfc || isLoading}
+                className="w-full py-3.5 rounded-xl bg-gradient-to-r from-cyan-500 to-emerald-400 text-black font-extrabold text-sm shadow-lg shadow-cyan-500/30 hover:opacity-95 active:scale-[0.98] transition-all disabled:opacity-50"
               >
                 {isScanningNfc ? "Leyendo Chip NFC..." : "Confirmar Entrega con Tarjeta Tangem"}
               </button>
@@ -320,9 +397,16 @@ export default function RoutePayApp() {
                   <span>Comisión RoutePay (0.5%):</span>
                   <span className="font-mono">${protocolFee} USDC</span>
                 </div>
-                <div className="text-[10px] text-cyan-400 font-mono mt-1 break-all">
-                  Tx: 0x9a8f27b4e61d8892f3e1... (Avalanche Fuji)
-                </div>
+                {txHash && (
+                  <a
+                    href={`${explorerUrl}/tx/${txHash}`}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="inline-block mt-1 text-[10px] font-mono text-cyan-400 hover:underline break-all"
+                  >
+                    Tx: {txHash.slice(0, 16)}... (Ver en SnowTrace ↗)
+                  </a>
+                )}
               </div>
             )}
           </div>
