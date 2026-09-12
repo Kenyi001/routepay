@@ -75,12 +75,19 @@ main (base/backend)                                                   ├──>
 - [x] **ABIs exportados a Frontend:** `TradeEscrow.json` y `TradeEscrowAbi.ts` generados.
 
 ### Tareas Pendientes:
+- [x] **Fondos Verificados en Billetera On-Chain:**
+  - `1.25 AVAX` en Fuji C-Chain (`0x4f30B06F8884F8632532A8fdDAd5C8CEc34f71f4`).
+  - `40.00 USDC` oficiales de Circle en Fuji (`0x5425890298aed601595a70AB815c96711a31Bc65`).
+  - Simulación de `Deploy.s.sol` completada con éxito (gas estimado: 0.00268 AVAX).
 - [ ] **Despliegue a Avalanche Fuji:**
-  - Ejecutar `forge script script/Deploy.s.sol --rpc-url https://api.avax-test.network/ext/bc/C/rpc --broadcast --verify` usando los 2.49 AVAX de Core Wallet.
+  - Ejecutar `forge script script/Deploy.s.sol --rpc-url https://api.avax-test.network/ext/bc/C/rpc --broadcast`.
   - Actualizar `NEXT_PUBLIC_TRADE_ESCROW_ADDRESS` en `src/contracts/addresses.ts` con la dirección oficial desplegada.
+- [ ] **Corrida Real de Carga (Checklist 7/7):**
+  - Ver detalle completo en [`docs/CORRIDA-REAL-DE-CARGA.md`](./docs/CORRIDA-REAL-DE-CARGA.md).
 
 ---
 
 ## 🏁 Criterio de Éxito para la Demo
 - Tiempo total del flujo de demostración frente al jurado: **menos de 90 segundos**.
-- Flujo: Importador crea escrow ➔ Pollar carga saldo ➔ Transportista inicia tránsito ➔ Receptor hace Tap con tarjeta física Tangem en el teléfono ➔ Liquidación instantánea en Avalanche Fuji C-Chain.
+- Flujo: Importador crea escrow ➔ Pollar carga saldo ➔ Transportista inicia tránsito ➔ Receptor hace Tap con firma criptográfica en el teléfono ➔ Liquidación instantánea en Avalanche Fuji C-Chain.
+

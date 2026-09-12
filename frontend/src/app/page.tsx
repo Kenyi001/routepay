@@ -8,6 +8,8 @@ import {
   Header,
   RoleSelector,
   Role,
+  LoginScreen,
+  LoginRole,
   OrderCreationForm,
   TransitTimeline,
   TangemTapModal,
@@ -38,75 +40,79 @@ export default function RoutePayApp() {
     startTransit,
     signTangemTap,
     settleWithTangemTap,
+    refundOnTimeout,
     explorerUrl,
   } = useTradeEscrow();
 
-  // Role & Escrow Lifecycle
+  // ─── Auth gate ────────────────────────────────────────────────────
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [userName, setUserName] = useState<string>("");
+  const [userLoginRole, setUserLoginRole] = useState<LoginRole>("importer");
+
+  // Dashboard role matches login role directly
   const [role, setRole] = useState<Role>("importer");
+
+  const handleLogin = (selectedRole: LoginRole, name: string) => {
+    setUserLoginRole(selectedRole);
+    setUserName(name);
+    // Carriers default to carrier panel; importers are permanently locked to importer
+    setRole(selectedRole);
+    setIsLoggedIn(true);
+  };
+
+  const handleLogout = () => {
+    setIsLoggedIn(false);
+    setOrderStatus("none");
+    setActivityLogs([]);
+  };
+
+  // ─── Escrow lifecycle ─────────────────────────────────────────────
   const [orderStatus, setOrderStatus] = useState<EscrowState>("none");
   const [currentOrderId, setCurrentOrderId] = useState<bigint>(BigInt(1));
 
-  // Route Details
+  // Route details
   const [origin, setOrigin] = useState("Puerto Arica, Chile");
   const [destination, setDestination] = useState("Santa Cruz, Bolivia");
 
-  // Form State
+  // Form state
   const [frightAmount, setFrightAmount] = useState("2500");
   const [manifestId, setManifestId] = useState("MIC-DTA-2026-AR-BO-0911");
   const [carrierAddress, setCarrierAddress] = useState(
     address || "0x71C8F794B325261EC9dB43bAf6e5a0D6C11b2E42"
   );
 
-  // Modals & Feedback
+  // Modals
   const [isTruckModalOpen, setIsTruckModalOpen] = useState(false);
   const [isPollarModalOpen, setIsPollarModalOpen] = useState(false);
   const [isCertificateOpen, setIsCertificateOpen] = useState(false);
+  const [isTangemModalOpen, setIsTangemModalOpen] = useState(false);
+
   const [toast, setToast] = useState<{ message: string | null; type: ToastType }>({
     message: null,
     type: "info",
   });
 
-  // On-Chain Activity Logs
   const [activityLogs, setActivityLogs] = useState<ActivityLogItem[]>([]);
 
-  // Payout calculation (99.5% carrier, 0.5% protocol fee)
+  // Derived values
   const numAmount = parseFloat(frightAmount || "0");
   const protocolFee = (numAmount * 0.005).toFixed(2);
   const carrierPayout = (numAmount * 0.995).toFixed(2);
 
   const showToast = (message: string, type: ToastType = "info") => {
     setToast({ message, type });
-    setTimeout(() => {
-      setToast({ message: null, type: "info" });
-    }, 5000);
+    setTimeout(() => setToast({ message: null, type: "info" }), 5000);
   };
 
-  const addActivityLog = (action: string, details: string, hash: string) => {
+  const addLog = (action: string, details: string, hash: string) => {
     const now = new Date();
-    const timeStr = `${now.getHours().toString().padStart(2, "0")}:${now
-      .getMinutes()
-      .toString()
-      .padStart(2, "0")}:${now.getSeconds().toString().padStart(2, "0")}`;
-    setActivityLogs((prev) => [
-      {
-        id: Math.random().toString(),
-        time: timeStr,
-        action,
-        details,
-        txHash: hash,
-      },
-      ...prev.slice(0, 4),
-    ]);
+    const time = `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}:${String(now.getSeconds()).padStart(2, "0")}`;
+    setActivityLogs((prev) => [{ id: Math.random().toString(), time, action, details, txHash: hash }, ...prev.slice(0, 4)]);
   };
 
-  // STEP 1: Fund Order (either via Pollar QR or Direct USDC)
+  // ─── Handlers ─────────────────────────────────────────────────────
   const handleFundOrder = async (method: "pollar" | "direct") => {
-    const res = await createAndFundOrder({
-      carrier: carrierAddress,
-      amountUsd: parseFloat(frightAmount || "0"),
-      manifestId,
-      durationDays: 7,
-    });
+    const res = await createAndFundOrder({ carrier: carrierAddress, amountUsd: numAmount, manifestId, durationDays: 7 });
 
     if (!res.success) {
       showToast(
@@ -123,111 +129,28 @@ export default function RoutePayApp() {
     }
     setOrderStatus("funded");
     setIsPollarModalOpen(false);
-
     const hash = res.hash || "0x9f3e...881a";
     if (method === "pollar") {
-      showToast(
-        language === "es"
-          ? "✓ Pago QR Pollar procesado. $2,500 USDC custodiados en Avalanche Fuji"
-          : "✓ Pollar QR processed. $2,500 USDC locked in Avalanche Fuji",
-        "success"
-      );
-      addActivityLog(
-        "createAndFundOrder() [Pollar BOB]",
-        `$${frightAmount} USDC locked in TradeEscrow vault via Pollar QR (MIC/DTA registered)`,
-        hash
-      );
+      showToast(language === "es" ? "✓ Pago QR Pollar procesado. $2,500 USDC custodiados en Avalanche." : "✓ Pollar QR processed. $2,500 USDC locked on Avalanche.", "success");
+      addLog("createAndFundOrder() [Pollar BOB]", `$${frightAmount} USDC locked via Pollar QR (MIC/DTA registered)`, hash);
     } else {
-      showToast(
-        language === "es"
-          ? "✓ Fondos bloqueados exitosamente en Smart Contract (Avalanche Fuji)"
-          : "✓ Funds locked successfully in Smart Contract (Avalanche Fuji)",
-        "success"
-      );
-      addActivityLog(
-        "createAndFundOrder() [Direct USDC]",
-        `$${frightAmount} USDC locked in TradeEscrow vault (MIC/DTA registered)`,
-        hash
-      );
+      showToast(language === "es" ? "✓ Fondos bloqueados en el contrato de custodia." : "✓ Funds locked in escrow contract.", "success");
+      addLog("createAndFundOrder() [Direct USDC]", `$${frightAmount} USDC locked in TradeEscrow vault (MIC/DTA registered)`, hash);
     }
   };
 
-  // STEP 2: Carrier starts international transit
   const handleStartTransit = async () => {
     setIsTruckModalOpen(true);
     const res = await startTransit(currentOrderId);
     setOrderStatus("in_transit");
     const hash = res.hash || "0x2c4e...119d";
-    showToast(
-      language === "es"
-        ? "🚚 Salida de Puerto confirmada. Tránsito internacional iniciado."
-        : "🚚 Port departure confirmed. International transit started.",
-      "info"
-    );
-    addActivityLog(
-      "startTransit()",
-      "Carrier dispatched from Arica port towards Tambo Quemado",
-      hash
-    );
+    showToast(language === "es" ? "🚚 Salida de Puerto confirmada. Tránsito iniciado." : "🚚 Port departure confirmed. Transit started.", "info");
+    addLog("startTransit()", "Carrier dispatched from Arica port towards Tambo Quemado", hash);
   };
 
-  // STEP 3: Proceed to Warehouse Tangem Tap
-  const handleGoToTangemTap = () => {
-    setRole("warehouse");
-    showToast(
-      language === "es"
-        ? "📍 Llegada a almacén destino. Realiza el Tap NFC para liberar pago."
-        : "📍 Arrived at warehouse. Tap Tangem NFC card to release payout.",
-      "info"
-    );
-  };
-
-  // Border Dispute Management
-  const handleOpenDispute = () => {
-    setOrderStatus("disputed");
-    const fakeHash = "0x" + Array.from({ length: 64 }, () => Math.floor(Math.random() * 16).toString(16)).join("");
-    showToast(
-      language === "es"
-        ? "⚠️ Retención aduanera reportada en Tambo Quemado."
-        : "⚠️ Customs retention reported at Tambo Quemado border checkpoint.",
-      "error"
-    );
-    addActivityLog(
-      "openDispute()",
-      "Border retention reported at Tambo Quemado customs checkpoint",
-      fakeHash
-    );
-  };
-
-  const handleResolveDispute = (refundImporter: boolean) => {
-    const fakeHash = "0x" + Array.from({ length: 64 }, () => Math.floor(Math.random() * 16).toString(16)).join("");
-    if (refundImporter) {
-      setOrderStatus("refunded");
-      showToast(
-        language === "es"
-          ? "Árbitro reembolsó el 100% de fondos al Importador."
-          : "Arbiter refunded 100% of funds to Importer.",
-        "info"
-      );
-      addActivityLog(
-        "resolveDispute(true)",
-        `Arbiter refunded 100% ($${frightAmount} USDC) to Importer`,
-        fakeHash
-      );
-    } else {
-      setOrderStatus("settled");
-      showToast(
-        language === "es"
-          ? "Árbitro autorizó la liberación de flete al Transportista."
-          : "Arbiter authorized freight payout to Carrier.",
-        "success"
-      );
-      addActivityLog(
-        "resolveDispute(false)",
-        `Arbiter released $${carrierPayout} USDC to Carrier`,
-        fakeHash
-      );
-    }
+  // Trigger Tangem NFC modal directly from carrier workflow
+  const handleOpenTangemModal = () => {
+    setIsTangemModalOpen(true);
   };
 
   // Settlement via Tangem NFC Tap
@@ -261,143 +184,204 @@ export default function RoutePayApp() {
 
     setOrderStatus("settled");
     const hash = res.hash || "0x7a1b...55f2";
-    showToast(
-      language === "es"
-        ? "🎉 Entrega verificada por firma Tangem NFC. Liquidación ejecutada en Avalanche Fuji."
-        : "🎉 Delivery verified by Tangem NFC signature. Settlement executed on Avalanche Fuji.",
-      "success"
-    );
-    addActivityLog(
-      "settleWithTangemTap()",
-      `Tangem NFC chip EAL6+ signature verified. Payout: $${carrierPayout} USDC`,
-      hash
-    );
+    showToast(language === "es" ? "🎉 Entrega verificada por Tangem NFC. Liquidación ejecutada en Avalanche." : "🎉 Delivery verified by Tangem NFC. Settlement executed on Avalanche.", "success");
+    addLog("settleWithTangemTap()", `Tangem NFC EAL6+ verified. Payout: $${carrierPayout} USDC`, hash);
   };
 
-  // Demo Reset
+  // Timeout Refund: if shipment exceeds estimated duration
+  const handleClaimTimeoutRefund = async () => {
+    const res = await refundOnTimeout(currentOrderId);
+
+    if (!res.success) {
+      showToast(
+        language === "es"
+          ? `✗ No se pudo procesar el reembolso: ${errorMessage || "revisá la consola"}`
+          : `✗ Could not process refund: ${errorMessage || "check the console"}`,
+        "error"
+      );
+      return;
+    }
+
+    setOrderStatus("refunded");
+    const hash = res.hash || "0x8f4c...33b1";
+    showToast(
+      language === "es"
+        ? "⚠️ Plazo vencido. Fondos ($2,500 USDC) reembolsados íntegramente al Importador."
+        : "⚠️ Timeout expired. Funds ($2,500 USDC) refunded to Importer.",
+      "error"
+    );
+    addLog("refundOnTimeout() [Demora Excesiva]", `Escrow refunded 100% ($${frightAmount} USDC) to Importer on Avalanche`, hash);
+  };
+
+  const handleOpenDispute = () => {
+    setOrderStatus("disputed");
+    const h = "0x" + Array.from({ length: 64 }, () => Math.floor(Math.random() * 16).toString(16)).join("");
+    showToast(language === "es" ? "⚠️ Retención aduanera reportada en Tambo Quemado." : "⚠️ Customs retention reported at Tambo Quemado.", "error");
+    addLog("openDispute()", "Border retention reported at Tambo Quemado customs checkpoint", h);
+  };
+
+  const handleResolveDispute = (refundImporter: boolean) => {
+    const h = "0x" + Array.from({ length: 64 }, () => Math.floor(Math.random() * 16).toString(16)).join("");
+    if (refundImporter) {
+      setOrderStatus("refunded");
+      showToast(language === "es" ? "Árbitro reembolsó el 100% al Importador." : "Arbiter refunded 100% to Importer.", "info");
+      addLog("resolveDispute(true)", `Arbiter refunded 100% ($${frightAmount} USDC) to Importer`, h);
+    } else {
+      setOrderStatus("settled");
+      showToast(language === "es" ? "Árbitro autorizó la liberación del flete." : "Arbiter authorized freight payout.", "success");
+      addLog("resolveDispute(false)", `Arbiter released $${carrierPayout} USDC to Carrier`, h);
+    }
+  };
+
   const handleResetDemo = () => {
     setOrderStatus("none");
     setRole("importer");
     setIsCertificateOpen(false);
+    setIsTangemModalOpen(false);
     setActivityLogs([]);
-    showToast(
-      language === "es" ? "Demostración reiniciada" : "Demo state reset",
-      "info"
-    );
+    showToast(language === "es" ? "Demostración reiniciada." : "Demo state reset.", "info");
   };
 
-  return (
-    <main className="min-h-screen bg-[#111827] text-white flex flex-col items-center justify-start p-3 sm:p-6 selection:bg-[#0A58CA] selection:text-white">
-      {/* Mobile-first centered app container (PWA design, 390px - 430px) */}
-      <div className="w-full max-w-md flex flex-col gap-4">
-        {/* Header Component with Web3 Connection, Language Switcher & Avalanche Fuji Status */}
-        <Header networkName="Avalanche Fuji" />
+  // ─── Login gate ───────────────────────────────────────────────────
+  if (!isLoggedIn) {
+    return <LoginScreen onLogin={handleLogin} />;
+  }
 
-        {/* Dynamic Toast Feedback Notification */}
+  // ─── Lifecycle step colors ─────────────────────────────────────────
+  const stepDot = (active: boolean, transit: boolean, dispute: boolean, refunded: boolean) => {
+    if (refunded) return { background: "var(--error)", boxShadow: "0 0 0 4px rgba(220,38,38,0.2)" };
+    if (dispute)  return { background: "var(--warning)", boxShadow: "0 0 0 4px rgba(245,158,11,0.2)" };
+    if (active)   return { background: "var(--green-main)", boxShadow: "0 0 0 4px rgba(8,161,110,0.15)" };
+    if (transit)  return { background: "var(--blue-bright)", boxShadow: "0 0 0 4px rgba(10,81,178,0.15)" };
+    return { background: "var(--border)" };
+  };
+
+  // ─── Dashboard ────────────────────────────────────────────────────
+  return (
+    <main
+      className="min-h-screen flex flex-col items-center justify-start p-3 sm:p-5"
+      style={{ background: "var(--bg)" }}
+    >
+      <div className="w-full max-w-md flex flex-col gap-4">
+
+        {/* Header con Logo oficial, Avatar del usuario y Logout */}
+        <Header userName={userName} userRole={userLoginRole} onLogout={handleLogout} />
+
+        {/* Toast */}
         <ToastNotification
           message={toast.message}
           type={toast.type}
           onClose={() => setToast({ message: null, type: "info" })}
         />
 
-        {/* 🧭 HUD "TECH IN ACTION" (Muestra qué tecnología está activa en cada paso) */}
-        <div className="w-full py-2 px-3.5 rounded-xl bg-[#0F172A] border border-white/10 flex items-center justify-between text-[11px] font-mono shadow-inner">
-          <div className="flex items-center gap-2 text-slate-300">
-            <span className="w-2 h-2 rounded-full bg-[#0A58CA] animate-ping"></span>
-            <span className="font-bold text-white">
-              {language === "es" ? "Tecnología Activa:" : "Active Tech:"}
+        {/* ─── Active Tech HUD ──────────────────────── */}
+        <div
+          className="w-full py-2 px-3.5 rounded-xl flex items-center justify-between text-[11px] font-mono"
+          style={{
+            background: "var(--surface)",
+            border: "1px solid var(--border)",
+            boxShadow: "0 1px 4px rgba(1,32,83,0.06)",
+          }}
+        >
+          <div className="flex items-center gap-2" style={{ color: "var(--text-secondary)" }}>
+            <span
+              className="w-2 h-2 rounded-full animate-ping"
+              style={{ background: "var(--blue-bright)" }}
+            />
+            <span className="font-bold" style={{ color: "var(--navy)" }}>
+              {language === "es" ? "Tech activa:" : "Active tech:"}
             </span>
           </div>
           {role === "importer" && (
-            <span className="text-[#10B981] font-bold flex items-center gap-1.5">
-              <span>🟢 Pollar (BOB ➔ USDC)</span>
-              <span className="text-slate-600">·</span>
-              <span className="text-[#E84142]">🔺 Fuji</span>
+            <span className="font-bold flex items-center gap-1.5" style={{ color: "var(--green-main)" }}>
+              🟢 Pollar (BOB ➔ USDC)
+              <span style={{ color: "var(--border)" }}>·</span>
+              <span style={{ color: "var(--blue-bright)" }}>Avalanche</span>
             </span>
           )}
           {role === "carrier" && (
-            <span className="text-blue-300 font-bold flex items-center gap-1.5">
-              <span>🏔️ Manifiesto MIC/DTA</span>
-              <span className="text-slate-600">·</span>
-              <span className="text-[#10B981]">TradeEscrow</span>
-            </span>
-          )}
-          {role === "warehouse" && (
-            <span className="text-amber-300 font-bold flex items-center gap-1.5">
-              <span>💳 Tangem NFC EAL6+</span>
-              <span className="text-slate-600">·</span>
-              <span className="text-[#10B981]">EIP-712</span>
+            <span className="font-bold flex items-center gap-1.5" style={{ color: "var(--blue-main)" }}>
+              🏔️ MIC/DTA
+              <span style={{ color: "var(--border)" }}>·</span>
+              <span style={{ color: "var(--green-main)" }}>TradeEscrow · Tangem</span>
             </span>
           )}
         </div>
 
-        {/* STEPPER DINÁMICO DE CICLO DE VIDA ON-CHAIN */}
-        <div className="bg-[#0F172A] border border-white/10 rounded-2xl p-3 flex items-center justify-between text-[11px] font-mono shadow-inner">
+        {/* ─── On-chain lifecycle stepper ───────────── */}
+        <div
+          className="rounded-xl p-3 flex items-center justify-between text-[11px] font-mono"
+          style={{
+            background: "var(--surface)",
+            border: "1px solid var(--border)",
+          }}
+        >
+          {/* Step 1: Funded */}
           <div className="flex items-center gap-1.5">
             <span
-              className={`w-2.5 h-2.5 rounded-full transition-all ${
-                orderStatus !== "none"
-                  ? "bg-[#10B981] shadow-md shadow-[#10B981]/50"
-                  : "bg-slate-700"
-              }`}
-            ></span>
-            <span className={orderStatus !== "none" ? "text-[#10B981] font-bold" : "text-slate-500"}>
+              className="w-2.5 h-2.5 rounded-full transition-all"
+              style={stepDot(orderStatus !== "none", false, false, false)}
+            />
+            <span
+              className="font-semibold"
+              style={{ color: orderStatus !== "none" ? "var(--green-main)" : "var(--text-muted)" }}
+            >
               {t.lifecycle.step1}
             </span>
           </div>
-          <span className="text-slate-600 font-sans">➔</span>
+          <span style={{ color: "var(--border)" }}>→</span>
+          {/* Step 2: In Transit */}
           <div className="flex items-center gap-1.5">
             <span
-              className={`w-2.5 h-2.5 rounded-full transition-all ${
-                orderStatus === "in_transit"
-                  ? "bg-[#0A58CA] animate-pulse shadow-md shadow-[#0A58CA]/50"
-                  : orderStatus === "settled"
-                  ? "bg-[#10B981]"
-                  : "bg-slate-700"
-              }`}
-            ></span>
+              className={`w-2.5 h-2.5 rounded-full transition-all ${orderStatus === "in_transit" ? "animate-pulse" : ""}`}
+              style={stepDot(orderStatus === "settled", orderStatus === "in_transit", false, false)}
+            />
             <span
-              className={
-                orderStatus === "in_transit"
-                  ? "text-[#0A58CA] font-bold"
-                  : orderStatus === "settled"
-                  ? "text-[#10B981]"
-                  : "text-slate-500"
-              }
+              className="font-semibold"
+              style={{
+                color:
+                  orderStatus === "in_transit" ? "var(--blue-bright)"
+                  : orderStatus === "settled" ? "var(--green-main)"
+                  : "var(--text-muted)",
+              }}
             >
               {t.lifecycle.step2}
             </span>
           </div>
-          <span className="text-slate-600 font-sans">➔</span>
+          <span style={{ color: "var(--border)" }}>→</span>
+          {/* Step 3: Settled / Disputed / Refunded */}
           <div className="flex items-center gap-1.5">
             <span
-              className={`w-2.5 h-2.5 rounded-full transition-all ${
-                orderStatus === "settled"
-                  ? "bg-[#10B981] shadow-md shadow-[#10B981]/50"
-                  : orderStatus === "disputed"
-                  ? "bg-amber-400 animate-ping"
-                  : "bg-slate-700"
-              }`}
-            ></span>
+              className={`w-2.5 h-2.5 rounded-full transition-all ${orderStatus === "disputed" ? "animate-ping" : ""}`}
+              style={stepDot(orderStatus === "settled", false, orderStatus === "disputed", orderStatus === "refunded")}
+            />
             <span
-              className={
-                orderStatus === "settled"
-                  ? "text-[#10B981] font-bold"
-                  : orderStatus === "disputed"
-                  ? "text-amber-400 font-bold"
-                  : "text-slate-500"
-              }
+              className="font-semibold"
+              style={{
+                color:
+                  orderStatus === "settled" ? "var(--green-main)"
+                  : orderStatus === "refunded" ? "var(--error)"
+                  : orderStatus === "disputed" ? "var(--warning)"
+                  : "var(--text-muted)",
+              }}
             >
-              {orderStatus === "disputed" ? t.lifecycle.stepDispute : t.lifecycle.step3}
+              {orderStatus === "refunded"
+                ? "Reembolsado"
+                : orderStatus === "disputed"
+                ? t.lifecycle.stepDispute
+                : t.lifecycle.step3}
             </span>
           </div>
         </div>
 
-        {/* Role Navigation Switcher */}
-        <RoleSelector currentRole={role} onSelectRole={setRole} />
+        {/* ─── Role tab switcher: solo visible para el Transportista ── */}
+        {userLoginRole === "carrier" && (
+          <RoleSelector currentRole={role} onSelectRole={setRole} />
+        )}
 
-        {/* VIEW 1: IMPORTER (Creación de Orden & Pollar On-Ramp) */}
-        {role === "importer" && (
+        {/* ─── VIEW 1: IMPORTER ─────────────────────── */}
+        {/* Importer role is LOCKED — userLoginRole === "importer" always shows this, never carrier panel */}
+        {userLoginRole === "importer" && (
           <div className="flex flex-col gap-3">
             <OrderCreationForm
               origin={origin}
@@ -414,26 +398,19 @@ export default function RoutePayApp() {
               protocolFee={protocolFee}
               carrierPayout={carrierPayout}
             />
-
-            {/* 🎯 BOTÓN DE FLUJO CONTINUO (Paso 2) */}
-            {orderStatus !== "none" && (
-              <button
-                onClick={() => setRole("carrier")}
-                className="w-full py-3.5 px-4 rounded-xl bg-gradient-to-r from-[#0A58CA] to-[#E84142] text-white font-extrabold text-xs shadow-lg shadow-[#0A58CA]/30 hover:opacity-95 active:scale-95 transition-all flex items-center justify-center gap-2"
-              >
-                <span>Paso 2: Conectar con Chofer en Arica ➔</span>
-              </button>
-            )}
           </div>
         )}
 
-        {/* VIEW 2: CARRIER / MONITOR (Flete en Tránsito & Custodia) */}
-        {role === "carrier" && (
+        {/* ─── VIEW 2: CARRIER (De Inicio a Fin del Envío) ── */}
+        {/* Carriers see their full panel. They can also switch to an order summary tab (role=importer). */}
+        {userLoginRole === "carrier" && role === "carrier" && (
           <TransitTimeline
             orderStatus={orderStatus}
             carrierPayout={carrierPayout}
+            frightAmount={frightAmount}
             onStartTransit={handleStartTransit}
-            onGoToTangemTap={handleGoToTangemTap}
+            onOpenTangemModal={handleOpenTangemModal}
+            onClaimTimeoutRefund={handleClaimTimeoutRefund}
             onOpenTruckModal={() => setIsTruckModalOpen(true)}
             onOpenDispute={handleOpenDispute}
             onResolveDispute={handleResolveDispute}
@@ -444,35 +421,178 @@ export default function RoutePayApp() {
           />
         )}
 
-        {/* VIEW 3: WAREHOUSE / TANGEM NFC TAP */}
-        {role === "warehouse" && (
-          <TangemTapModal
-            orderStatus={orderStatus}
-            onSettled={handleTangemSettled}
-            frightAmount={frightAmount}
-            carrierPayout={carrierPayout}
-            protocolFee={protocolFee}
-            onOpenCertificate={() => setIsCertificateOpen(true)}
-          />
+        {/* ─── VIEW 2b: CARRIER → Orden del Flete (tarjeta Tangem grande + resumen) ── */}
+        {userLoginRole === "carrier" && role === "importer" && (
+          <div className="flex flex-col gap-3">
+
+            {/* ─── Resumen compacto de la orden ─── */}
+            <div
+              className="rp-card p-4 flex flex-col gap-3"
+              style={{ border: "1px solid var(--border)" }}
+            >
+              <div className="flex items-center justify-between pb-2" style={{ borderBottom: "1px solid var(--border)" }}>
+                <h2 className="font-extrabold text-sm flex items-center gap-2" style={{ color: "var(--navy)" }}>
+                  📋 Orden del Importador
+                </h2>
+                <span className="rp-badge rp-badge-blue font-mono text-[10px]">Solo lectura</span>
+              </div>
+
+              <div className="grid grid-cols-2 gap-2 text-xs">
+                <div className="p-2.5 rounded-lg" style={{ background: "var(--surface-2)", border: "1px solid var(--border)" }}>
+                  <span className="text-[10px] font-mono uppercase tracking-wider block" style={{ color: "var(--text-muted)" }}>Manifiesto</span>
+                  <span className="font-bold font-mono text-[11px]" style={{ color: "var(--navy)" }}>{manifestId}</span>
+                </div>
+                <div className="p-2.5 rounded-lg" style={{ background: "var(--surface-2)", border: "1px solid var(--border)" }}>
+                  <span className="text-[10px] font-mono uppercase tracking-wider block" style={{ color: "var(--text-muted)" }}>Monto</span>
+                  <span className="font-bold font-mono" style={{ color: "var(--green-main)" }}>${frightAmount} USDC</span>
+                </div>
+                <div className="p-2.5 rounded-lg" style={{ background: "var(--surface-2)", border: "1px solid var(--border)" }}>
+                  <span className="text-[10px] font-mono uppercase tracking-wider block" style={{ color: "var(--text-muted)" }}>Tu Cobro (99.5%)</span>
+                  <span className="font-bold font-mono" style={{ color: "var(--blue-main)" }}>${carrierPayout} USDC</span>
+                </div>
+                <div className="p-2.5 rounded-lg" style={{ background: "var(--surface-2)", border: "1px solid var(--border)" }}>
+                  <span className="text-[10px] font-mono uppercase tracking-wider block" style={{ color: "var(--text-muted)" }}>Estado</span>
+                  <span className="font-bold" style={{ color: orderStatus === "none" ? "var(--text-muted)" : orderStatus === "in_transit" ? "var(--blue-bright)" : orderStatus === "settled" ? "var(--green-main)" : "var(--error)" }}>
+                    {orderStatus === "none" ? "Sin fondear" : orderStatus === "funded" ? "Fondeado ✓" : orderStatus === "in_transit" ? "En Tránsito 🚛" : orderStatus === "settled" ? "Liquidado 🎉" : orderStatus === "refunded" ? "Reembolsado ⚠️" : "En Disputa ⚠️"}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* ─── TARJETA TANGEM GRANDE (igual al modal) ─── */}
+            <div
+              className="rp-card p-5 flex flex-col gap-4 items-center text-center w-full"
+              style={{ borderColor: orderStatus === "settled" ? "var(--green-main)" : "var(--border)" }}
+            >
+              {/* Badge */}
+              <span className="rp-badge rp-badge-blue text-[10px] uppercase tracking-wider">
+                CONFIRMACIÓN FÍSICA PRESENCIAL HARDWARE
+              </span>
+
+              <div>
+                <h2 className="font-black text-xl" style={{ color: "var(--navy)" }}>
+                  {orderStatus === "settled" ? "¡Entrega Verificada! 🎉" : "Acerca la Tarjeta Tangem NFC"}
+                </h2>
+                <p className="text-xs mt-1 max-w-xs" style={{ color: "var(--text-secondary)" }}>
+                  {orderStatus === "settled"
+                    ? "Firma EIP-712 válida. Pago liberado instantáneamente en Avalanche."
+                    : "El receptor en almacén valida la llegada haciendo tap con su tarjeta de hardware en el teléfono Android."}
+                </p>
+              </div>
+
+              {/* ─── 3D Card Flip (EXACTAMENTE igual al modal) ─── */}
+              <div className="relative flex items-center justify-center w-full my-1">
+                <div className="card-flip-scene" style={{ maxWidth: 280, height: 170 }}>
+                  <div className={`card-flip-inner ${orderStatus === "settled" ? "flipped" : ""}`}>
+
+                    {/* Front face */}
+                    <div className="card-face card-front p-4 flex flex-col justify-between text-left">
+                      <div className="flex justify-between items-center">
+                        <span className="text-[10px] font-mono font-bold tracking-widest text-white/80 flex items-center gap-1.5">
+                          <span className="w-2 h-2 rounded-full bg-red-400" />
+                          TANGEM NFC
+                        </span>
+                        <div className="w-7 h-5 rounded bg-yellow-400/90 border border-yellow-200 shadow-inner flex items-center justify-center text-[7px] font-black text-black">
+                          CHIP
+                        </div>
+                      </div>
+
+                      <div>
+                        <p className="text-[9px] text-white/60 font-mono tracking-wider">CC EAL6+ SECURE ELEMENT</p>
+                        <p className="text-xs font-extrabold text-white font-mono tracking-wider mt-0.5">
+                          RECEPTOR AUTORIZADO
+                        </p>
+                      </div>
+
+                      <div className="flex justify-between items-end text-[9px] font-mono text-white/60">
+                        <span>ROUTE PAY PROTOCOL</span>
+                        <span className="text-red-400 font-bold">TAP TO SIGN</span>
+                      </div>
+                    </div>
+
+                    {/* Back face — success */}
+                    <div className="card-face card-back p-4 flex flex-col justify-between text-left">
+                      <div className="flex justify-between items-center">
+                        <span className="text-[10px] font-mono font-bold tracking-widest text-white/80 flex items-center gap-1.5">
+                          <span className="w-2 h-2 rounded-full bg-white animate-pulse" />
+                          TANGEM NFC
+                        </span>
+                        <span className="text-[9px] font-black text-white bg-white/20 px-2 py-0.5 rounded-full">EIP-712 ✓</span>
+                      </div>
+
+                      <div className="text-center">
+                        <div className="text-3xl mb-1">✅</div>
+                        <p className="text-xs font-black text-white">FIRMA VERIFICADA</p>
+                        <p className="text-[9px] text-white/70 font-mono mt-0.5">HARDWARE CONFIRMED</p>
+                      </div>
+
+                      <div className="flex justify-between items-end text-[9px] font-mono text-white/70">
+                        <span>ROUTE PAY PROTOCOL</span>
+                        <span className="text-white font-bold">${carrierPayout} RELEASED</span>
+                      </div>
+                    </div>
+
+                  </div>
+                </div>
+              </div>
+
+              {/* CTA — abre el modal real de Tangem */}
+              {orderStatus !== "settled" && (
+                <button
+                  onClick={handleOpenTangemModal}
+                  className="rp-btn-primary w-full py-3.5 text-sm flex items-center justify-center gap-2"
+                >
+                  💳 <strong>Confirmar Entrega con Tarjeta Tangem NFC</strong>
+                </button>
+              )}
+
+              {orderStatus === "settled" && (
+                <div
+                  className="w-full p-3.5 rounded-xl text-center"
+                  style={{ background: "rgba(8,161,110,0.08)", border: "1px solid rgba(8,161,110,0.3)" }}
+                >
+                  <p className="font-black text-sm" style={{ color: "var(--green-main)" }}>🎉 Flete Liquidado · ${carrierPayout} USDC acreditados</p>
+                </div>
+              )}
+
+              {/* Why Tangem */}
+              <p className="text-[10px] font-mono" style={{ color: "var(--text-muted)" }}>
+                ❓ ¿Por qué Tangem NFC? · Hardware EAL6+ · Imposible falsificar sin la tarjeta física
+              </p>
+            </div>
+
+          </div>
         )}
 
-        {/* REGISTRO EN VIVO DE ACTIVIDAD DEL CONTRATO (TradeEscrow.sol) */}
+        {/* ─── Activity log ─────────────────────────── */}
         {activityLogs.length > 0 && (
-          <div className="bg-[#0F172A] border border-white/10 rounded-2xl p-3.5 flex flex-col gap-2.5 shadow-inner">
-            <div className="flex items-center justify-between text-[11px] font-mono text-slate-300 border-b border-white/10 pb-2">
-              <span className="flex items-center gap-2 text-blue-300 font-bold">
-                <span className="w-2 h-2 rounded-full bg-[#0A58CA] animate-ping"></span>
+          <div
+            className="rounded-xl p-4 flex flex-col gap-3"
+            style={{
+              background: "var(--surface)",
+              border: "1px solid var(--border)",
+            }}
+          >
+            <div
+              className="flex items-center justify-between text-[11px] font-mono pb-2"
+              style={{ borderBottom: "1px solid var(--border)" }}
+            >
+              <span className="flex items-center gap-2 font-bold" style={{ color: "var(--blue-main)" }}>
+                <span
+                  className="w-2 h-2 rounded-full animate-ping"
+                  style={{ background: "var(--blue-bright)" }}
+                />
                 {t.activity.title}
               </span>
-              <span className="text-[10px] text-slate-400 font-mono">Avalanche Fuji</span>
+              <span className="text-[10px]" style={{ color: "var(--text-muted)" }}>TradeEscrow.sol</span>
             </div>
-            <div className="flex flex-col gap-2">
+            <div className="flex flex-col gap-2.5">
               {activityLogs.map((log) => (
-                <div key={log.id} className="text-[10px] font-mono flex items-start gap-2 text-slate-200">
-                  <span className="text-slate-400 whitespace-nowrap">{log.time}</span>
+                <div key={log.id} className="text-[10px] font-mono flex items-start gap-2 rp-log-item">
+                  <span style={{ color: "var(--text-muted)" }} className="whitespace-nowrap">{log.time}</span>
                   <div className="flex-1">
-                    <span className="text-[#10B981] font-bold">{log.action}: </span>
-                    <span className="text-slate-300">{log.details}</span>
+                    <span className="font-bold" style={{ color: "var(--green-main)" }}>{log.action}: </span>
+                    <span style={{ color: "var(--text-secondary)" }}>{log.details}</span>
                   </div>
                 </div>
               ))}
@@ -480,12 +600,36 @@ export default function RoutePayApp() {
           </div>
         )}
 
-        {/* Footer */}
-        <footer className="text-center text-[10px] text-slate-400 py-3 border-t border-white/10 flex items-center justify-between px-2 font-mono">
+        {/* ─── Footer ───────────────────────────────── */}
+        <footer
+          className="text-center text-[10px] py-3 flex items-center justify-between px-1 font-mono"
+          style={{ borderTop: "1px solid var(--border)", color: "var(--text-muted)" }}
+        >
           <span>{t.footer.protocol}</span>
-          <span className="text-slate-300">{t.footer.tracks}</span>
+          <span style={{ color: "var(--text-secondary)" }}>{t.footer.tracks}</span>
         </footer>
       </div>
+
+      {/* ─── Modals ──────────────────────────────────────────────────── */}
+
+      {/* Tangem NFC Verification Modal (Overlay activado por el transportista al llegar a destino) */}
+      <TangemTapModal
+        isOpen={isTangemModalOpen}
+        onClose={() => setIsTangemModalOpen(false)}
+        orderStatus={orderStatus}
+        onSettled={() => {
+          handleTangemSettled();
+          // Dejar un instante para ver la animación antes de cerrar
+          setTimeout(() => setIsTangemModalOpen(false), 2200);
+        }}
+        frightAmount={frightAmount}
+        carrierPayout={carrierPayout}
+        protocolFee={protocolFee}
+        onOpenCertificate={() => {
+          setIsTangemModalOpen(false);
+          setIsCertificateOpen(true);
+        }}
+      />
 
       {/* Animated Cyber-Truck Transit Modal with Live Telemetry */}
       <TruckTransitModal

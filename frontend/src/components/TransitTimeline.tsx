@@ -1,12 +1,14 @@
-import React from "react";
+import React, { useState } from "react";
 
 export type EscrowState = "none" | "funded" | "in_transit" | "settled" | "disputed" | "refunded";
 
 interface TransitTimelineProps {
   orderStatus: EscrowState;
   carrierPayout: string;
+  frightAmount?: string;
   onStartTransit: () => void;
-  onGoToTangemTap: () => void;
+  onOpenTangemModal: () => void;
+  onClaimTimeoutRefund: () => void;
   onOpenTruckModal?: () => void;
   onOpenDispute?: () => void;
   onResolveDispute?: (refundImporter: boolean) => void;
@@ -19,8 +21,10 @@ interface TransitTimelineProps {
 export const TransitTimeline: React.FC<TransitTimelineProps> = ({
   orderStatus,
   carrierPayout,
+  frightAmount = "2500",
   onStartTransit,
-  onGoToTangemTap,
+  onOpenTangemModal,
+  onClaimTimeoutRefund,
   onOpenTruckModal,
   onOpenDispute,
   onResolveDispute,
@@ -29,254 +33,407 @@ export const TransitTimeline: React.FC<TransitTimelineProps> = ({
   explorerUrl = "https://testnet.snowtrace.io",
   isLoading = false,
 }) => {
+  const [showTimeoutConfirm, setShowTimeoutConfirm] = useState(false);
+
   return (
-    <div className="glass-panel rounded-2xl p-5 flex flex-col gap-4 border border-white/10 shadow-xl bg-[#1F2937]/90">
-      {/* Header */}
-      <div className="flex items-center justify-between border-b border-white/10 pb-3">
+    <div className="rp-card p-5 flex flex-col gap-4 w-full">
+      {/* ─── Header ─────────────────────────────────── */}
+      <div
+        className="flex items-center justify-between pb-3"
+        style={{ borderBottom: "1px solid var(--border)" }}
+      >
         <div>
-          <h2 className="font-extrabold text-sm text-white flex items-center gap-2">
-            Panel del Transportista / Monitor
+          <h2 className="font-extrabold text-sm flex items-center gap-2" style={{ color: "var(--navy)" }}>
+            🚛 Panel del Transportista
           </h2>
-          <p className="text-[11px] text-slate-400">Seguimiento en tiempo real de flete</p>
+          <p className="text-[11px]" style={{ color: "var(--text-secondary)" }}>
+            Seguimiento de envío de inicio a fin
+          </p>
         </div>
-        <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-[#0A58CA] text-blue-100 border border-blue-400/40 font-semibold">
-          Orden #101
+        <span className="rp-badge rp-badge-blue font-mono text-[10px]">
+          MIC/DTA · Orden #101
         </span>
       </div>
 
-      {/* Highlighted Escrow Card with Electric Sapphire #0A58CA & Crypto Green #10B981 accents */}
-      <div className="bg-gradient-to-br from-[#073B8A] via-[#0A58CA] to-[#0F172A] p-4.5 rounded-2xl border border-blue-400/30 shadow-lg relative overflow-hidden">
+      {/* ─── Custody Balance Card ────────────────────── */}
+      <div
+        className="p-4 rounded-2xl relative overflow-hidden"
+        style={{
+          background: "linear-gradient(135deg, var(--navy) 0%, var(--blue-main) 100%)",
+          color: "#fff",
+          boxShadow: "0 6px 20px rgba(1, 32, 83, 0.20)",
+        }}
+      >
         <div className="flex items-center justify-between">
-          <span className="flex items-center gap-1.5 text-[#10B981] text-xs font-bold font-mono">
-            <span className="w-2 h-2 rounded-full bg-[#10B981] animate-pulse"></span>
-            🔒 FONDOS EN CUSTODIA SMART CONTRACT
+          <span className="flex items-center gap-1.5 text-xs font-bold font-mono text-green-300">
+            <span className="w-2 h-2 rounded-full bg-green-400 animate-pulse" />
+            FONDOS EN CUSTODIA SMART CONTRACT
           </span>
-          <span className="text-[10px] text-slate-200 font-mono">Avalanche Fuji</span>
+          <span className="text-[10px] font-mono text-blue-200">Avalanche</span>
         </div>
 
         <div className="text-3xl font-black font-mono text-white mt-2 flex items-baseline gap-2">
           ${carrierPayout}
-          <span className="text-sm font-semibold text-[#10B981]">USDC</span>
+          <span className="text-sm font-semibold text-green-300">USDC</span>
         </div>
 
-        <p className="text-[11px] text-slate-200 mt-1.5 leading-relaxed">
-          Los fondos están bloqueados y garantizados. Se liberarán instantáneamente a tu wallet en cuanto el receptor apoye su tarjeta física Tangem NFC.
+        <p className="text-[11px] text-blue-100 mt-1.5 leading-relaxed">
+          {orderStatus === "settled"
+            ? "✓ Flete cobrado y transferido a tu billetera."
+            : orderStatus === "refunded"
+            ? "⚠️ Fondos reembolsados al importador por exceder el tiempo estimado."
+            : "Fondos 100% garantizados en custodia on-chain. Se liberan al transportista al verificar la entrega con la tarjeta Tangem NFC."}
         </p>
+
+        <div
+          className="mt-2.5 pt-2 flex items-center justify-between text-[10px] font-mono"
+          style={{ borderTop: "1px solid rgba(255,255,255,0.15)" }}
+        >
+          <span className="text-blue-200">Portador de Tarjeta Tangem:</span>
+          <span className="font-bold text-green-300">Transportista (Firma Presencial) ✓</span>
+        </div>
       </div>
 
-      {/* Stepper Timeline with 4 States */}
-      <div className="bg-[#0F172A] p-4 rounded-xl border border-white/5 flex flex-col gap-3.5 text-xs">
-        <span className="text-slate-400 text-[10px] font-mono uppercase tracking-wider font-semibold">
-          Progreso del Viaje (Arica ➔ Santa Cruz)
+      {/* ─── Ruta y Estimación de Tiempo ─────────────── */}
+      <div
+        className="rounded-xl p-3 text-xs flex items-center justify-between"
+        style={{ background: "var(--surface-2)", border: "1px solid var(--border)" }}
+      >
+        <div>
+          <span className="text-[10px] font-bold block uppercase tracking-wider" style={{ color: "var(--text-muted)" }}>
+            Ruta Internacional
+          </span>
+          <span className="font-bold" style={{ color: "var(--navy)" }}>
+            Arica (CL) ➔ Santa Cruz (BO)
+          </span>
+        </div>
+        <div className="text-right">
+          <span className="text-[10px] font-bold block uppercase tracking-wider" style={{ color: "var(--text-muted)" }}>
+            Tiempo Estimado
+          </span>
+          <span className="font-bold" style={{ color: "var(--blue-main)" }}>
+            7 días (Plazo Smart Contract)
+          </span>
+        </div>
+      </div>
+
+      {/* ─── Timeline: De Inicio a Fin del Envío ─────── */}
+      <div
+        className="rounded-xl p-4 flex flex-col gap-3.5 text-xs"
+        style={{ background: "var(--bg)", border: "1px solid var(--border)" }}
+      >
+        <span className="text-[10px] font-mono uppercase tracking-wider font-bold" style={{ color: "var(--text-secondary)" }}>
+          Ciclo de Envío (Inicio a Fin)
         </span>
 
         <div className="flex flex-col gap-3">
-          {/* Step 1: Creado */}
+          {/* Paso 1: Salida / Despacho en Puerto */}
           <div className="flex items-start gap-3">
             <div className="flex flex-col items-center">
               <div
-                className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold ${
-                  orderStatus !== "none"
-                    ? "bg-[#10B981] text-black"
-                    : "bg-[#1F2937] text-slate-400 border border-white/20"
-                }`}
+                className="w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold"
+                style={{
+                  background: orderStatus !== "none" ? "var(--green-main)" : "var(--surface)",
+                  color: orderStatus !== "none" ? "#fff" : "var(--text-muted)",
+                  border: orderStatus !== "none" ? "none" : "1.5px solid var(--border)",
+                }}
               >
                 ✓
               </div>
-              <div className="w-0.5 h-6 bg-white/10 my-0.5"></div>
+              <div className="w-0.5 h-6 my-0.5" style={{ background: "var(--border)" }} />
             </div>
             <div className="flex-1">
               <div className="flex justify-between items-center">
-                <span className="font-semibold text-white">1. Orden Creada</span>
-                <span className="text-[10px] font-mono text-slate-400">Puerto Arica</span>
-              </div>
-              <p className="text-[11px] text-slate-400">Manifiesto aduanero cargado por importador.</p>
-            </div>
-          </div>
-
-          {/* Step 2: Custodiado */}
-          <div className="flex items-start gap-3">
-            <div className="flex flex-col items-center">
-              <div
-                className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold ${
-                  orderStatus === "funded" || orderStatus === "in_transit" || orderStatus === "settled"
-                    ? "bg-[#10B981] text-black"
-                    : "bg-[#1F2937] text-slate-400 border border-white/20"
-                }`}
-              >
-                {orderStatus === "funded" || orderStatus === "in_transit" || orderStatus === "settled" ? "✓" : "2"}
-              </div>
-              <div className="w-0.5 h-6 bg-white/10 my-0.5"></div>
-            </div>
-            <div className="flex-1">
-              <div className="flex justify-between items-center">
-                <span className="font-semibold text-white">2. Custodiado en Smart Contract</span>
-                <span
-                  className={`text-[10px] font-mono ${
-                    orderStatus !== "none" ? "text-[#10B981] font-bold" : "text-slate-500"
-                  }`}
-                >
-                  {orderStatus !== "none" ? "Garantizado" : "Pendiente"}
+                <span className="font-bold" style={{ color: "var(--navy)" }}>
+                  1. Inicio: Salida de Puerto Arica
+                </span>
+                <span className="text-[10px] font-mono" style={{ color: "var(--text-muted)" }}>
+                  {orderStatus !== "none" ? "Completado" : "Pendiente"}
                 </span>
               </div>
-              <p className="text-[11px] text-slate-400">Depósito en USDC bloqueado en la red Avalanche.</p>
+              <p className="text-[11px]" style={{ color: "var(--text-secondary)" }}>
+                Carga asignada y fondos depositados en el contrato de custodia.
+              </p>
             </div>
           </div>
 
-          {/* Step 3: En Tránsito */}
+          {/* Paso 2: Tránsito Internacional & Aduana */}
           <div className="flex items-start gap-3">
             <div className="flex flex-col items-center">
               <div
-                className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold ${
-                  orderStatus === "in_transit" || orderStatus === "settled"
-                    ? "bg-[#E84142] text-white animate-pulse"
-                    : "bg-[#1F2937] text-slate-400 border border-white/20"
-                }`}
+                className="w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold"
+                style={{
+                  background:
+                    orderStatus === "settled" ? "var(--green-main)"
+                    : orderStatus === "in_transit" ? "var(--blue-bright)"
+                    : "var(--surface)",
+                  color: orderStatus === "funded" || orderStatus === "none" ? "var(--text-muted)" : "#fff",
+                  border:
+                    orderStatus === "funded" || orderStatus === "none"
+                      ? "1.5px solid var(--border)"
+                      : "none",
+                }}
+              >
+                {orderStatus === "settled" ? "✓" : "2"}
+              </div>
+              <div className="w-0.5 h-6 my-0.5" style={{ background: "var(--border)" }} />
+            </div>
+            <div className="flex-1">
+              <div className="flex justify-between items-center">
+                <span className="font-bold" style={{ color: "var(--navy)" }}>
+                  2. Tránsito: Frontera Tambo Quemado
+                </span>
+                <span
+                  className="text-[10px] font-mono font-bold"
+                  style={{
+                    color:
+                      orderStatus === "in_transit" ? "var(--blue-bright)"
+                      : orderStatus === "settled" ? "var(--green-main)"
+                      : "var(--text-muted)",
+                  }}
+                >
+                  {orderStatus === "in_transit" ? "En Ruta Activa" : orderStatus === "settled" ? "Superado" : "Pendiente"}
+                </span>
+              </div>
+              <p className="text-[11px]" style={{ color: "var(--text-secondary)" }}>
+                Tránsito internacional de flete y control aduanero binacional.
+              </p>
+            </div>
+          </div>
+
+          {/* Paso 3: Fin: Llegada & Tap Tangem NFC */}
+          <div className="flex items-start gap-3">
+            <div className="flex flex-col items-center">
+              <div
+                className="w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold"
+                style={{
+                  background: orderStatus === "settled" ? "var(--green-main)" : "var(--surface)",
+                  color: orderStatus === "settled" ? "#fff" : "var(--text-muted)",
+                  border: orderStatus === "settled" ? "none" : "1.5px solid var(--border)",
+                }}
               >
                 {orderStatus === "settled" ? "✓" : "3"}
               </div>
-              <div className="w-0.5 h-6 bg-white/10 my-0.5"></div>
             </div>
             <div className="flex-1">
               <div className="flex justify-between items-center">
-                <span className="font-semibold text-white">3. En Tránsito (Frontera)</span>
+                <span className="font-bold" style={{ color: "var(--navy)" }}>
+                  3. Llegada a Almacén & Tap Tangem (Exclusivo Transportista)
+                </span>
                 <span
-                  className={`text-[10px] font-mono ${
-                    orderStatus === "in_transit"
-                      ? "text-[#E84142] font-bold"
-                      : orderStatus === "settled"
-                      ? "text-[#10B981]"
-                      : "text-slate-500"
-                  }`}
+                  className="text-[10px] font-mono font-bold"
+                  style={{ color: orderStatus === "settled" ? "var(--green-main)" : "var(--text-muted)" }}
                 >
-                  {orderStatus === "in_transit"
-                    ? "En Ruta (Tambo Quemado)"
-                    : orderStatus === "settled"
-                    ? "Completado"
-                    : "Pendiente"}
+                  {orderStatus === "settled" ? "Liquidado ✓" : "Llegada Notificada"}
                 </span>
               </div>
-              <p className="text-[11px] text-slate-400">Tránsito internacional y cruce de aduana.</p>
-            </div>
-          </div>
-
-          {/* Step 4: Entregado */}
-          <div className="flex items-start gap-3">
-            <div className="flex flex-col items-center">
-              <div
-                className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold ${
-                  orderStatus === "settled"
-                    ? "bg-[#10B981] text-black"
-                    : "bg-[#1F2937] text-slate-400 border border-white/20"
-                }`}
-              >
-                {orderStatus === "settled" ? "✓" : "4"}
-              </div>
-            </div>
-            <div className="flex-1">
-              <div className="flex justify-between items-center">
-                <span className="font-semibold text-white">4. Entregado & Liquidado</span>
-                <span
-                  className={`text-[10px] font-mono ${
-                    orderStatus === "settled" ? "text-[#10B981] font-bold" : "text-slate-500"
-                  }`}
-                >
-                  {orderStatus === "settled" ? "Liquidación Instantánea" : "Pendiente Tap NFC"}
-                </span>
-              </div>
-              <p className="text-[11px] text-slate-400">Verificación presencial mediante firma Tangem NFC.</p>
+              <p className="text-[11px]" style={{ color: "var(--text-secondary)" }}>
+                El importador ya fue notificado de tu arribo al almacén. Como transportista portador de la tarjeta Tangem, acercala a tu dispositivo para confirmar la entrega y liberar el pago.
+              </p>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Demo helper button to show Cyber-Truck road animation anytime */}
+      {/* ─── Botón Telemetría de Camión ─────────────── */}
       {onOpenTruckModal && (
         <button
           onClick={onOpenTruckModal}
           type="button"
-          className="w-full py-2 rounded-xl bg-[#0F172A] hover:bg-[#374151] text-slate-200 hover:text-[#0A58CA] font-mono text-[11px] border border-white/10 transition-all flex items-center justify-center gap-1.5 shadow-sm"
+          className="rp-btn-outline w-full py-2.5 text-xs flex items-center justify-center gap-1.5"
         >
-          <span>🚚</span> Ver animación del camión en ruta (Demo)
+          <span>🚚</span> Ver Animación de Camión y Telemetría en Ruta
         </button>
       )}
 
-      {/* Dynamic Actions */}
+      {/* ─── ACCIONES POR ESTADO ────────────────────── */}
+
+      {/* ESTADO 1: Funded -> Iniciar Tránsito */}
       {orderStatus === "funded" && (
         <button
           onClick={onStartTransit}
           disabled={isLoading}
-          className="w-full py-3 rounded-xl bg-[#0A58CA] hover:bg-[#073B8A] text-white font-extrabold text-xs shadow-lg shadow-[#0A58CA]/40 active:scale-[0.98] transition-all disabled:opacity-50 flex items-center justify-center gap-2 border border-blue-400/30"
+          className="rp-btn-primary w-full py-3.5 text-xs flex items-center justify-center gap-2"
         >
-          <span>🚛</span> {isLoading ? "Registrando salida en Fuji..." : "Confirmar Salida de Puerto (Iniciar Tránsito)"}
+          <span>🚛</span>
+          {isLoading ? "Registrando salida en blockchain…" : "Iniciar Tránsito: Confirmar Salida de Puerto Arica"}
         </button>
       )}
 
+      {/* ESTADO 2: In Transit -> Llegada & Tap Tangem NFC */}
       {orderStatus === "in_transit" && (
-        <div className="flex flex-col gap-2">
+        <div className="flex flex-col gap-2.5">
           <button
-            onClick={onGoToTangemTap}
-            className="w-full py-3 rounded-xl bg-[#E84142] hover:bg-[#D03738] text-white font-extrabold text-xs shadow-lg shadow-[#E84142]/30 active:scale-[0.98] transition-all flex items-center justify-center gap-2"
+            onClick={onOpenTangemModal}
+            className="rp-btn-green w-full py-3.5 text-xs flex items-center justify-center gap-2 shadow-lg"
           >
-            <span>📍</span> Paso 3: Llegada a Destino ➔ Tap Tangem
+            <span>💳</span>
+            <strong>Confirmar Entrega en Almacén (Firma con Tarjeta Tangem)</strong>
           </button>
+
           {onOpenDispute && (
             <button
               onClick={onOpenDispute}
               type="button"
-              className="w-full py-1 text-[11px] font-mono text-amber-400 hover:text-amber-300 transition-colors"
+              className="py-1 text-[11px] font-mono hover:underline"
+              style={{ color: "var(--warning)" }}
             >
               ⚠️ Reportar Retención en Aduana (Tambo Quemado)
             </button>
           )}
+
+          {/* ─── BOTÓN DE REEMBOLSO POR RETRASO / TIMEOUT ─── */}
+          <div
+            className="mt-2 p-3 rounded-xl flex flex-col gap-2"
+            style={{
+              background: "rgba(220, 38, 38, 0.05)",
+              border: "1px dashed rgba(220, 38, 38, 0.3)",
+            }}
+          >
+            <div className="flex items-center justify-between text-xs">
+              <span className="font-bold flex items-center gap-1" style={{ color: "var(--error)" }}>
+                <span>⏱️</span> ¿El flete tardó más del tiempo estimado?
+              </span>
+              <span className="text-[10px] font-mono text-slate-500">
+                Deadline: 7 días
+              </span>
+            </div>
+            <p className="text-[11px]" style={{ color: "var(--text-secondary)" }}>
+              Si el transportista supera el plazo máximo estipulado sin entregar la carga, el smart contract permite solicitar el reembolso íntegro de los fondos custodiados.
+            </p>
+
+            {!showTimeoutConfirm ? (
+              <button
+                type="button"
+                onClick={() => setShowTimeoutConfirm(true)}
+                className="py-2 px-3 rounded-lg text-xs font-bold transition-colors"
+                style={{
+                  background: "transparent",
+                  border: "1.5px solid var(--error)",
+                  color: "var(--error)",
+                }}
+              >
+                ⏳ Solicitar Reembolso por Expiración de Tiempo Estimado
+              </button>
+            ) : (
+              <div className="flex flex-col gap-2 p-2 rounded-lg bg-red-50 border border-red-200">
+                <p className="text-[11px] font-semibold text-red-700">
+                  ¿Confirmar solicitud de reembolso por demora excesiva? Se ejecutará <code>refundOnTimeout()</code> en Avalanche.
+                </p>
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowTimeoutConfirm(false);
+                      onClaimTimeoutRefund();
+                    }}
+                    disabled={isLoading}
+                    className="flex-1 py-1.5 text-xs font-bold text-white bg-red-600 hover:bg-red-700 rounded-lg transition-colors"
+                  >
+                    {isLoading ? "Procesando…" : "Sí, Reembolsar Fondos al Importador"}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setShowTimeoutConfirm(false)}
+                    className="py-1.5 px-3 text-xs font-semibold text-slate-600 bg-white border border-slate-300 rounded-lg hover:bg-slate-50"
+                  >
+                    Cancelar
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
         </div>
       )}
 
+      {/* ESTADO: Reembolsado por Timeout */}
+      {orderStatus === "refunded" && (
+        <div
+          className="p-3.5 rounded-xl flex flex-col gap-2 text-center"
+          style={{
+            background: "rgba(220, 38, 38, 0.08)",
+            border: "1px solid rgba(220, 38, 38, 0.3)",
+          }}
+        >
+          <p className="text-xs font-extrabold" style={{ color: "var(--error)" }}>
+            ⚠️ Fondos Reembolsados al Importador
+          </p>
+          <p className="text-[11px]" style={{ color: "var(--text-secondary)" }}>
+            El flete superó el tiempo estimado de entrega. El smart contract ejecutó <code>refundOnTimeout()</code> devolviendo el 100% (${frightAmount} USDC) al importador.
+          </p>
+        </div>
+      )}
+
+      {/* ESTADO: Disputado */}
       {orderStatus === "disputed" && onResolveDispute && (
-        <div className="p-3.5 bg-amber-500/15 border border-amber-500/40 rounded-xl flex flex-col gap-2 text-left">
-          <p className="text-xs font-bold text-amber-400">⚠️ Retención Aduanera Reportada</p>
-          <p className="text-[11px] text-slate-300">
-            Carga demorada por fiscalización en frontera Tambo Quemado. Resolución mediante árbitro:
+        <div
+          className="p-3.5 rounded-xl flex flex-col gap-2 text-left"
+          style={{
+            background: "rgba(245, 158, 11, 0.10)",
+            border: "1px solid rgba(245, 158, 11, 0.4)",
+          }}
+        >
+          <p className="text-xs font-bold" style={{ color: "var(--warning)" }}>
+            ⚠️ Retención Aduanera Reportada en Tambo Quemado
+          </p>
+          <p className="text-[11px]" style={{ color: "var(--text-secondary)" }}>
+            Fiscalización aduanera en curso. Resolución mediante árbitro:
           </p>
           <div className="flex gap-2 mt-1">
             <button
               onClick={() => onResolveDispute(true)}
-              className="flex-1 py-1.5 px-2 bg-[#0F172A] border border-amber-500/40 text-amber-300 text-[10px] rounded-lg font-mono hover:bg-slate-800"
+              className="flex-1 py-2 px-2 text-[10px] font-bold rounded-lg border border-amber-400 bg-white text-amber-800 hover:bg-amber-50"
             >
               Reembolsar Importador (100%)
             </button>
             <button
               onClick={() => onResolveDispute(false)}
-              className="flex-1 py-1.5 px-2 bg-[#10B981]/20 border border-[#10B981]/40 text-[#10B981] text-[10px] rounded-lg font-mono hover:bg-[#10B981]/30 font-bold"
+              className="flex-1 py-2 px-2 text-[10px] font-bold rounded-lg text-white bg-green-600 hover:bg-green-700"
             >
-              Liberar Flete al Transportista
+              Liberar Flete a Transportista
             </button>
           </div>
         </div>
       )}
 
+      {/* ESTADO: Settled -> Cobrado con éxito */}
       {orderStatus === "settled" && (
-        <div className="p-3.5 bg-[#10B981]/15 border border-[#10B981]/40 rounded-xl text-center flex flex-col gap-2">
-          <p className="text-xs text-[#10B981] font-extrabold">🎉 ¡Flete Cobrado con Éxito!</p>
-          <p className="text-[11px] text-slate-300">
-            ${carrierPayout} USDC acreditados inmediatamente a tu billetera
+        <div
+          className="p-4 rounded-xl text-center flex flex-col gap-2.5 animate-success-pop"
+          style={{
+            background: "rgba(8, 161, 110, 0.08)",
+            border: "1.5px solid rgba(8, 161, 110, 0.35)",
+          }}
+        >
+          <div className="text-2xl">🎉</div>
+          <p className="text-sm font-extrabold" style={{ color: "var(--green-main)" }}>
+            ¡Flete Cobrado con Éxito!
           </p>
+          <p className="text-xs font-mono font-bold" style={{ color: "var(--navy)" }}>
+            ${carrierPayout} USDC acreditados a tu billetera
+          </p>
+          <p className="text-[11px]" style={{ color: "var(--text-secondary)" }}>
+            Entrega física confirmada presencialmente mediante clave criptográfica de tarjeta Tangem NFC.
+          </p>
+
           {onOpenCertificate && (
             <button
               onClick={onOpenCertificate}
-              className="w-full py-2.5 bg-[#10B981]/20 hover:bg-[#10B981]/30 border border-[#10B981]/50 rounded-xl text-[#10B981] font-extrabold text-xs transition-all shadow-md"
+              className="rp-btn-green w-full py-2.5 text-xs mt-1"
             >
               📜 Ver Certificado Criptográfico de Entrega
             </button>
           )}
+
           {txHash && (
             <a
               href={`${explorerUrl}/tx/${txHash}`}
               target="_blank"
               rel="noreferrer"
-              className="inline-block mt-1 text-[10px] font-mono text-[#10B981] hover:underline break-all"
+              className="text-[10px] font-mono hover:underline break-all mt-1"
+              style={{ color: "var(--blue-light)" }}
             >
-              Ver Tx en SnowTrace ↗ ({txHash.slice(0, 16)}...)
+              Ver Tx en SnowTrace ↗ ({txHash.slice(0, 18)}…)
             </a>
           )}
         </div>
