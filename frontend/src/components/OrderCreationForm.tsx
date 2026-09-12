@@ -41,7 +41,12 @@ export const OrderCreationForm: React.FC<OrderCreationFormProps> = ({
       >
         <div>
           <h2 className="font-extrabold text-sm flex items-center gap-2" style={{ color: "var(--navy)" }}>
-            📦 Panel del Importador
+            <svg className="w-4 h-4 text-[var(--blue-main)]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
+              <polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline>
+              <line x1="12" y1="22.08" x2="12" y2="12"></line>
+            </svg>
+            Panel del Importador
           </h2>
           <p className="text-[11px]" style={{ color: "var(--text-secondary)" }}>
             Creación y custodia de órdenes de flete internacional
@@ -64,7 +69,13 @@ export const OrderCreationForm: React.FC<OrderCreationFormProps> = ({
           <div className="flex items-center justify-between">
             <span className="font-black text-xs flex items-center gap-1.5" style={{ color: "var(--blue-main)" }}>
               <span className="w-2.5 h-2.5 rounded-full bg-blue-600 animate-ping" />
-              🚛 ESTADO EN VIVO: Carga en Tránsito
+              <svg className="w-3.5 h-3.5 text-[var(--blue-main)]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <rect x="1" y="3" width="15" height="13" rx="1"></rect>
+                <polygon points="16 8 20 8 23 11 23 16 16 16 16 8"></polygon>
+                <circle cx="5.5" cy="18.5" r="2.5"></circle>
+                <circle cx="18.5" cy="18.5" r="2.5"></circle>
+              </svg>
+              ESTADO EN VIVO: Carga en Tránsito
             </span>
             <span className="rp-badge rp-badge-blue text-[9px] font-mono">
               Ruta Activa
@@ -76,7 +87,13 @@ export const OrderCreationForm: React.FC<OrderCreationFormProps> = ({
             style={{ background: "#fff", border: "1px solid var(--border)" }}
           >
             <div className="flex items-center justify-between font-bold" style={{ color: "var(--navy)" }}>
-              <span>📍 Notificación de Almacén:</span>
+              <span className="flex items-center gap-1">
+                <svg className="w-3.5 h-3.5 text-blue-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
+                  <circle cx="12" cy="10" r="3"></circle>
+                </svg>
+                Notificación de Almacén:
+              </span>
               <span className="text-[10px] font-mono text-amber-600">Arribo en curso / Almacén</span>
             </div>
             <p className="text-[11px] leading-relaxed mt-0.5" style={{ color: "var(--text-secondary)" }}>
@@ -89,7 +106,12 @@ export const OrderCreationForm: React.FC<OrderCreationFormProps> = ({
             className="p-3 rounded-lg flex items-start gap-2.5 text-xs"
             style={{ background: "rgba(8, 161, 110, 0.08)", border: "1px solid rgba(8, 161, 110, 0.25)" }}
           >
-            <span className="text-xl">💳</span>
+            <div className="p-1 rounded bg-green-100 text-[var(--green-main)]">
+              <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <rect x="2" y="5" width="20" height="14" rx="2"></rect>
+                <line x1="2" y1="10" x2="22" y2="10"></line>
+              </svg>
+            </div>
             <div>
               <p className="font-bold text-[11px]" style={{ color: "var(--green-main)" }}>
                 Tarjeta Tangem NFC (En poder exclusivo del Transportista)
@@ -111,7 +133,11 @@ export const OrderCreationForm: React.FC<OrderCreationFormProps> = ({
           }}
         >
           <p className="text-xs font-black flex items-center justify-center gap-1.5" style={{ color: "var(--green-main)" }}>
-            <span>🎉</span> ¡Tu pedido ya llegó a almacén y fue recibido!
+            <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+              <polyline points="22 4 12 14.01 9 11.01"></polyline>
+            </svg>
+            ¡Tu pedido ya llegó a almacén y fue recibido!
           </p>
           <p className="text-[11px]" style={{ color: "var(--text-secondary)" }}>
             El transportista confirmó la entrega con su tarjeta Tangem NFC. Fondos (${carrierPayout} USDC) liberados con éxito.
@@ -127,8 +153,13 @@ export const OrderCreationForm: React.FC<OrderCreationFormProps> = ({
             border: "1.5px solid var(--error)",
           }}
         >
-          <p className="text-xs font-black" style={{ color: "var(--error)" }}>
-            ⚠️ Fondos Reembolsados al Importador
+          <p className="text-xs font-black flex items-center justify-center gap-1.5" style={{ color: "var(--error)" }}>
+            <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="12" cy="12" r="10"></circle>
+              <line x1="12" y1="8" x2="12" y2="12"></line>
+              <line x1="12" y1="16" x2="12.01" y2="16"></line>
+            </svg>
+            Fondos Reembolsados al Importador
           </p>
           <p className="text-[11px]" style={{ color: "var(--text-secondary)" }}>
             El pedido superó el plazo estimado y los ${frightAmount} USDC fueron acreditados de vuelta a tu billetera.

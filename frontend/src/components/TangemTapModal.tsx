@@ -174,7 +174,11 @@ export const TangemTapModal: React.FC<TangemTapModalProps> = ({
               </div>
 
               <div className="text-center">
-                <div className="text-3xl mb-1">✅</div>
+                <div className="w-10 h-10 mx-auto mb-1 rounded-full bg-white/20 flex items-center justify-center text-white">
+                  <svg className="w-6 h-6 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <polyline points="20 6 9 17 4 12"></polyline>
+                  </svg>
+                </div>
                 <p className="text-xs font-black text-white">FIRMA VERIFICADA</p>
                 <p className="text-[9px] text-white/70 font-mono mt-0.5">HARDWARE CONFIRMED</p>
               </div>
@@ -198,14 +202,19 @@ export const TangemTapModal: React.FC<TangemTapModalProps> = ({
 
       {nfcError && (
         <div
-          className="w-full p-2.5 rounded-lg text-[11px] font-mono"
+          className="w-full p-2.5 rounded-lg text-[11px] font-mono flex items-center gap-1.5"
           style={{
             background: "rgba(220, 38, 38, 0.08)",
             border: "1px solid rgba(220, 38, 38, 0.3)",
             color: "var(--error)",
           }}
         >
-          ⚠️ {nfcError}
+          <svg className="w-4 h-4 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
+            <line x1="12" y1="9" x2="12" y2="13"></line>
+            <line x1="12" y1="17" x2="12.01" y2="17"></line>
+          </svg>
+          {nfcError}
         </div>
       )}
 
@@ -223,7 +232,13 @@ export const TangemTapModal: React.FC<TangemTapModalProps> = ({
               Leyendo Chip NFC…
             </>
           ) : (
-            <>💳 Confirmar Entrega con Tangem NFC</>
+            <>
+              <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <rect x="2" y="5" width="20" height="14" rx="2"></rect>
+                <line x1="2" y1="10" x2="22" y2="10"></line>
+              </svg>
+              Confirmar Entrega con Tangem NFC
+            </>
           )}
         </button>
       ) : (
@@ -235,7 +250,12 @@ export const TangemTapModal: React.FC<TangemTapModalProps> = ({
           }}
         >
           <div className="font-black text-sm flex items-center justify-between" style={{ color: "var(--green-main)" }}>
-            <span>🎉 Flete Liquidado Instantáneamente</span>
+            <span className="flex items-center gap-1.5">
+              <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="20 6 9 17 4 12"></polyline>
+              </svg>
+              Flete Liquidado Instantáneamente
+            </span>
             <span
               className="text-[10px] font-mono px-2 py-0.5 rounded-full"
               style={{ background: "rgba(8,161,110,0.15)", border: "1px solid rgba(8,161,110,0.3)" }}

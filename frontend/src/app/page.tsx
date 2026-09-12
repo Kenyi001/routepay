@@ -378,7 +378,11 @@ export default function RoutePayApp() {
             >
               <div className="flex items-center justify-between pb-2" style={{ borderBottom: "1px solid var(--border)" }}>
                 <h2 className="font-extrabold text-sm flex items-center gap-2" style={{ color: "var(--navy)" }}>
-                  📋 Orden del Importador
+                  <svg className="w-4 h-4 text-[var(--blue-main)]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                    <polyline points="14 2 14 8 20 8"></polyline>
+                  </svg>
+                  Orden del Importador
                 </h2>
                 <span className="rp-badge rp-badge-blue font-mono text-[10px]">Solo lectura</span>
               </div>
@@ -399,7 +403,7 @@ export default function RoutePayApp() {
                 <div className="p-2.5 rounded-lg" style={{ background: "var(--surface-2)", border: "1px solid var(--border)" }}>
                   <span className="text-[10px] font-mono uppercase tracking-wider block" style={{ color: "var(--text-muted)" }}>Estado</span>
                   <span className="font-bold" style={{ color: orderStatus === "none" ? "var(--text-muted)" : orderStatus === "in_transit" ? "var(--blue-bright)" : orderStatus === "settled" ? "var(--green-main)" : "var(--error)" }}>
-                    {orderStatus === "none" ? "Sin fondear" : orderStatus === "funded" ? "Fondeado ✓" : orderStatus === "in_transit" ? "En Tránsito 🚛" : orderStatus === "settled" ? "Liquidado 🎉" : orderStatus === "refunded" ? "Reembolsado ⚠️" : "En Disputa ⚠️"}
+                    {orderStatus === "none" ? "Sin fondear" : orderStatus === "funded" ? "Fondeado" : orderStatus === "in_transit" ? "En Tránsito" : orderStatus === "settled" ? "Liquidado" : orderStatus === "refunded" ? "Reembolsado" : "En Disputa"}
                   </span>
                 </div>
               </div>
@@ -417,7 +421,7 @@ export default function RoutePayApp() {
 
               <div>
                 <h2 className="font-black text-xl" style={{ color: "var(--navy)" }}>
-                  {orderStatus === "settled" ? "¡Entrega Verificada! 🎉" : "Acerca la Tarjeta Tangem NFC"}
+                  {orderStatus === "settled" ? "¡Entrega Verificada!" : "Acerca la Tarjeta Tangem NFC"}
                 </h2>
                 <p className="text-xs mt-1 max-w-xs" style={{ color: "var(--text-secondary)" }}>
                   {orderStatus === "settled"
@@ -467,7 +471,11 @@ export default function RoutePayApp() {
                       </div>
 
                       <div className="text-center">
-                        <div className="text-3xl mb-1">✅</div>
+                        <div className="w-10 h-10 mx-auto mb-1 rounded-full bg-white/20 flex items-center justify-center text-white">
+                          <svg className="w-6 h-6 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                            <polyline points="20 6 9 17 4 12"></polyline>
+                          </svg>
+                        </div>
                         <p className="text-xs font-black text-white">FIRMA VERIFICADA</p>
                         <p className="text-[9px] text-white/70 font-mono mt-0.5">HARDWARE CONFIRMED</p>
                       </div>
@@ -488,7 +496,11 @@ export default function RoutePayApp() {
                   onClick={handleOpenTangemModal}
                   className="rp-btn-primary w-full py-3.5 text-sm flex items-center justify-center gap-2"
                 >
-                  💳 <strong>Confirmar Entrega con Tarjeta Tangem NFC</strong>
+                  <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <rect x="2" y="5" width="20" height="14" rx="2"></rect>
+                    <line x1="2" y1="10" x2="22" y2="10"></line>
+                  </svg>
+                  <strong>Confirmar Entrega con Tarjeta Tangem NFC</strong>
                 </button>
               )}
 
@@ -497,7 +509,12 @@ export default function RoutePayApp() {
                   className="w-full p-3.5 rounded-xl text-center"
                   style={{ background: "rgba(8,161,110,0.08)", border: "1px solid rgba(8,161,110,0.3)" }}
                 >
-                  <p className="font-black text-sm" style={{ color: "var(--green-main)" }}>🎉 Flete Liquidado · ${carrierPayout} USDC acreditados</p>
+                  <p className="font-black text-sm flex items-center justify-center gap-1.5" style={{ color: "var(--green-main)" }}>
+                    <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                      <polyline points="20 6 9 17 4 12"></polyline>
+                    </svg>
+                    Flete Liquidado · ${carrierPayout} USDC acreditados
+                  </p>
                 </div>
               )}
 
@@ -581,9 +598,13 @@ export default function RoutePayApp() {
       <TruckTransitModal
         isOpen={isTruckModalOpen}
         onClose={() => setIsTruckModalOpen(false)}
+        onConfirmWithTangem={() => {
+          setIsTruckModalOpen(false);
+          handleOpenTangemModal();
+        }}
         orderId="101"
         manifestId={manifestId}
-        amount={carrierPayout}
+        amount={frightAmount}
       />
 
       {/* Modal On-Ramp Pollar QR Simple (BOB ➔ USDC) */}

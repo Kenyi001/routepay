@@ -10,9 +10,26 @@ interface LoginScreenProps {
   onLogin: (role: LoginRole, name: string) => void;
 }
 
+const ImporterIcon = () => (
+  <svg className="w-6 h-6 text-[#03409E]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
+    <polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline>
+    <line x1="12" y1="22.08" x2="12" y2="12"></line>
+  </svg>
+);
+
+const CarrierIcon = () => (
+  <svg className="w-6 h-6 text-[#08A16E]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <rect x="1" y="3" width="15" height="13" rx="1"></rect>
+    <polygon points="16 8 20 8 23 11 23 16 16 16 16 8"></polygon>
+    <circle cx="5.5" cy="18.5" r="2.5"></circle>
+    <circle cx="18.5" cy="18.5" r="2.5"></circle>
+  </svg>
+);
+
 const ROLE_CARDS: {
   id: LoginRole;
-  emoji: string;
+  icon: React.ReactNode;
   titleEs: string;
   titleEn: string;
   descEs: string;
@@ -21,7 +38,7 @@ const ROLE_CARDS: {
 }[] = [
   {
     id: "importer",
-    emoji: "📦",
+    icon: <ImporterIcon />,
     titleEs: "Importador",
     titleEn: "Importer",
     descEs: "Crea órdenes de flete y bloquea USDC en el contrato de custodia.",
@@ -30,7 +47,7 @@ const ROLE_CARDS: {
   },
   {
     id: "carrier",
-    emoji: "🚛",
+    icon: <CarrierIcon />,
     titleEs: "Transportista",
     titleEn: "Carrier",
     descEs: "Gestiona el viaje de inicio a fin y cobra al verificar la entrega.",
@@ -123,10 +140,10 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin }) => {
               >
                 <div className="flex items-center gap-3">
                   <span
-                    className="w-11 h-11 rounded-xl flex items-center justify-center text-2xl flex-shrink-0"
+                    className="w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0"
                     style={{ background: `${card.color}15` }}
                   >
-                    {card.emoji}
+                    {card.icon}
                   </span>
                   <div className="flex-1">
                     <div className="font-bold text-sm" style={{ color: isActive ? card.color : "var(--navy)" }}>
@@ -150,8 +167,13 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin }) => {
             );
           })}
           {attemptedSubmit && !selected && (
-            <p className="text-[11px] font-semibold text-red-500">
-              {isEs ? "⚠️ Debes seleccionar un rol para continuar." : "⚠️ Please select a role to continue."}
+            <p className="text-[11px] font-semibold text-red-500 flex items-center gap-1">
+              <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="12" cy="12" r="10"></circle>
+                <line x1="12" y1="8" x2="12" y2="12"></line>
+                <line x1="12" y1="16" x2="12.01" y2="16"></line>
+              </svg>
+              {isEs ? "Debes seleccionar un rol para continuar." : "Please select a role to continue."}
             </p>
           )}
         </div>
@@ -175,8 +197,13 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin }) => {
             }}
           />
           {attemptedSubmit && !isNameValid && (
-            <p className="text-[11px] font-semibold text-red-500">
-              {isEs ? "⚠️ El nombre es obligatorio (mínimo 2 caracteres)." : "⚠️ Name is required (min 2 chars)."}
+            <p className="text-[11px] font-semibold text-red-500 flex items-center gap-1">
+              <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="12" cy="12" r="10"></circle>
+                <line x1="12" y1="8" x2="12" y2="12"></line>
+                <line x1="12" y1="16" x2="12.01" y2="16"></line>
+              </svg>
+              {isEs ? "El nombre es obligatorio (mínimo 2 caracteres)." : "Name is required (min 2 chars)."}
             </p>
           )}
         </div>
