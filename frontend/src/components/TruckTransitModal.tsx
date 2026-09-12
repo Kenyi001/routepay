@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
+import { useLanguage } from "@/context/LanguageContext";
 
 interface TruckTransitModalProps {
   isOpen: boolean;
@@ -14,13 +15,16 @@ interface TruckTransitModalProps {
 export default function TruckTransitModal({
   isOpen,
   onClose,
-  title = "Despacho en Ruta Internacional",
+  title,
   orderId = "1",
   manifestId = "MIC-DTA-2026-AR-BO-0911",
   amount = "2,487.50",
 }: TruckTransitModalProps) {
+  const { t } = useLanguage();
   const [progress, setProgress] = useState(0);
   const [isCompleted, setIsCompleted] = useState(false);
+
+  const displayTitle = title || t.truckModal.title;
 
   useEffect(() => {
     if (!isOpen) {
@@ -59,13 +63,13 @@ export default function TruckTransitModal({
             <span className="w-2.5 h-2.5 rounded-full bg-cyan-400 animate-pulse"></span>
             <div>
               <p className="text-[10px] font-mono text-cyan-400 uppercase tracking-wider font-semibold">
-                Corredor Bioceánico Arica ➔ Santa Cruz
+                {t.truckModal.corridor}
               </p>
-              <h3 className="text-base font-bold text-white tracking-tight">{title}</h3>
+              <h3 className="text-base font-bold text-white tracking-tight">{displayTitle}</h3>
             </div>
           </div>
           <span className="text-[11px] font-mono px-2 py-0.5 rounded-full bg-slate-800 text-slate-300 border border-white/10">
-            Orden #{orderId}
+            {t.truckModal.order} #{orderId}
           </span>
         </div>
 
@@ -81,13 +85,13 @@ export default function TruckTransitModal({
           {/* Location indicator badges */}
           <div className="relative z-10 flex justify-between text-[10px] font-mono text-slate-400">
             <span className={`transition-colors ${progress < 50 ? "text-cyan-400 font-bold" : "text-emerald-400"}`}>
-              🇨🇱 Arica (Salida)
+              {t.truckModal.arica}
             </span>
             <span className={`transition-colors ${progress >= 40 && progress < 85 ? "text-cyan-400 font-bold" : ""}`}>
-              🏔️ Tambo Quemado
+              {t.truckModal.tambo}
             </span>
             <span className={`transition-colors ${progress >= 85 ? "text-emerald-400 font-bold" : ""}`}>
-              🇧🇴 Santa Cruz
+              {t.truckModal.santaCruz}
             </span>
           </div>
 
@@ -173,7 +177,7 @@ export default function TruckTransitModal({
         {/* PROGRESS BAR */}
         <div className="w-full flex flex-col gap-1.5 my-2">
           <div className="flex justify-between text-[11px] font-mono text-slate-300">
-            <span>{isCompleted ? "Ruta completada" : "En marcha hacia aduana..."}</span>
+            <span>{isCompleted ? t.truckModal.completed : t.truckModal.inProgress}</span>
             <span className="text-cyan-400 font-bold">{Math.round(progress)}%</span>
           </div>
           <div className="w-full h-2 bg-slate-800 rounded-full overflow-hidden p-0.5 border border-white/5">
@@ -191,34 +195,34 @@ export default function TruckTransitModal({
               <span className="w-6 h-6 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center font-bold text-sm border border-emerald-500/30">
                 ✓
               </span>
-              <h4 className="font-bold text-sm text-emerald-300">¡Salida Confirmada con Éxito!</h4>
+              <h4 className="font-bold text-sm text-emerald-300">{t.truckModal.successTitle}</h4>
             </div>
 
             <p className="text-xs text-slate-300">
-              El camión pesado está registrado en tránsito en la aduana de Arica. Fondos asegurados en Avalanche Fuji:
+              {t.truckModal.successDesc}
             </p>
 
             <div className="bg-slate-900/80 p-2.5 rounded-xl border border-white/5 flex justify-between items-center font-mono text-xs">
-              <span className="text-slate-400">Garantía Retenida:</span>
+              <span className="text-slate-400">{t.truckModal.escrowLocked}</span>
               <span className="font-bold text-emerald-400 text-sm">${amount} USDC</span>
             </div>
 
             <div className="flex justify-between items-center text-[10px] text-slate-400 font-mono">
-              <span>Manifiesto: {manifestId}</span>
-              <span className="text-cyan-400">Verificado en Fuji</span>
+              <span>{t.truckModal.manifest} {manifestId}</span>
+              <span className="text-cyan-400">{t.truckModal.verifiedFuji}</span>
             </div>
 
             <button
               onClick={onClose}
               className="w-full mt-2 py-2.5 rounded-xl bg-gradient-to-r from-emerald-500 to-cyan-500 text-black font-extrabold text-xs shadow-lg shadow-emerald-500/25 hover:opacity-95 active:scale-95 transition-all"
             >
-              Continuar al Panel de Monitoreo ➔
+              {t.truckModal.btnContinue}
             </button>
           </div>
         ) : (
           <div className="w-full p-3 bg-slate-950/50 border border-white/5 rounded-xl mt-2 text-xs text-slate-400 flex items-center justify-center gap-2 font-mono">
             <span className="w-2 h-2 rounded-full bg-cyan-400 animate-ping"></span>
-            Registrando coordenadas y manifiesto en Avalanche...
+            {t.truckModal.registeringCoords}
           </div>
         )}
       </div>
