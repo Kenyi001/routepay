@@ -32,8 +32,8 @@ export const PollarOnrampModal: React.FC<PollarOnrampModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-fadeIn">
-      <div className="w-full max-w-sm bg-[#27272A] border border-white/10 rounded-2xl p-5 shadow-2xl flex flex-col gap-4">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md animate-fadeIn">
+      <div className="w-full max-w-sm bg-[#1F2937] border border-white/15 rounded-2xl p-5 shadow-2xl flex flex-col gap-4">
         {/* Header */}
         <div className="flex items-center justify-between border-b border-white/10 pb-3">
           <div className="flex items-center gap-2">
@@ -45,14 +45,14 @@ export const PollarOnrampModal: React.FC<PollarOnrampModalProps> = ({
           </div>
           <button
             onClick={onClose}
-            className="w-7 h-7 rounded-full bg-[#18181B] text-slate-400 hover:text-white flex items-center justify-center text-sm border border-white/10"
+            className="w-7 h-7 rounded-full bg-[#0F172A] text-slate-400 hover:text-white flex items-center justify-center text-sm border border-white/10"
           >
             ✕
           </button>
         </div>
 
         {/* QR Code graphic container */}
-        <div className="flex flex-col items-center bg-[#18181B] p-4 rounded-xl border border-white/5 gap-3">
+        <div className="flex flex-col items-center bg-[#0F172A] p-4 rounded-xl border border-white/5 gap-3 shadow-inner">
           <div className="relative p-3 bg-white rounded-xl shadow-lg flex items-center justify-center">
             {/* SVG Simulated QR Code */}
             <svg
@@ -79,7 +79,7 @@ export const PollarOnrampModal: React.FC<PollarOnrampModalProps> = ({
               <rect x="40" y="5" width="10" height="10" fill="black" />
               <rect x="50" y="15" width="10" height="10" fill="black" />
               <rect x="40" y="25" width="10" height="10" fill="black" />
-              <rect x="45" y="45" width="15" height="15" fill="#E84142" />
+              <rect x="45" y="45" width="15" height="15" fill="#0A58CA" />
               <rect x="65" y="40" width="10" height="20" fill="black" />
               <rect x="40" y="65" width="20" height="10" fill="black" />
               <rect x="65" y="65" width="30" height="30" fill="black" />
@@ -87,7 +87,7 @@ export const PollarOnrampModal: React.FC<PollarOnrampModalProps> = ({
               <rect x="75" y="75" width="10" height="10" fill="#10B981" />
             </svg>
             <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-              <div className="w-8 h-8 rounded-lg bg-[#E84142] text-white font-black text-xs flex items-center justify-center shadow-md">
+              <div className="w-8 h-8 rounded-lg bg-[#0A58CA] text-white font-black text-xs flex items-center justify-center shadow-md">
                 P
               </div>
             </div>
@@ -103,9 +103,9 @@ export const PollarOnrampModal: React.FC<PollarOnrampModalProps> = ({
         </div>
 
         {/* Steps */}
-        <div className="text-[11px] text-slate-400 flex flex-col gap-1 bg-[#18181B]/50 p-2.5 rounded-lg border border-white/5">
+        <div className="text-[11px] text-slate-400 flex flex-col gap-1 bg-[#0F172A]/60 p-2.5 rounded-lg border border-white/5">
           <p className="flex items-center gap-1.5 text-slate-300">
-            <span className="w-1.5 h-1.5 rounded-full bg-[#E84142]"></span> Escanea con la app de tu banco boliviano (BNB, BCP, Mercantil).
+            <span className="w-1.5 h-1.5 rounded-full bg-[#0A58CA]"></span> Escanea con la app de tu banco boliviano (BNB, BCP, Mercantil).
           </p>
           <p className="flex items-center gap-1.5 text-slate-300">
             <span className="w-1.5 h-1.5 rounded-full bg-[#10B981]"></span> Pollar convierte BOB ➔ USDC e insta-fondea el Smart Contract.
@@ -116,14 +116,14 @@ export const PollarOnrampModal: React.FC<PollarOnrampModalProps> = ({
         <div className="flex gap-2">
           <button
             onClick={onClose}
-            className="flex-1 py-2.5 rounded-xl bg-[#18181B] hover:bg-white/10 text-slate-300 font-semibold text-xs border border-white/10 transition-all"
+            className="flex-1 py-2.5 rounded-xl bg-[#0F172A] hover:bg-white/10 text-slate-300 font-semibold text-xs border border-white/10 transition-all"
           >
             Cancelar
           </button>
           <button
             onClick={handlePay}
             disabled={isProcessing}
-            className="flex-2 py-2.5 rounded-xl bg-[#E84142] hover:bg-[#D03738] text-white font-bold text-xs shadow-lg shadow-[#E84142]/30 active:scale-[0.98] transition-all flex items-center justify-center gap-1.5"
+            className="flex-2 py-2.5 rounded-xl bg-gradient-to-r from-[#0A58CA] to-[#1D4ED8] hover:opacity-95 text-white font-bold text-xs shadow-lg shadow-[#0A58CA]/30 active:scale-[0.98] transition-all flex items-center justify-center gap-1.5"
           >
             {isProcessing ? (
               <>

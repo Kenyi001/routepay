@@ -59,7 +59,7 @@ export default function RoutePayApp() {
 
   const handleFundOrder = async (method: "pollar" | "direct") => {
     // Call TradeEscrow smart contract
-    const res = await createAndFundOrder({
+    await createAndFundOrder({
       carrier: carrierAddress,
       amountUsd: parseFloat(frightAmount || "0"),
       manifestId,
@@ -109,7 +109,7 @@ export default function RoutePayApp() {
   };
 
   return (
-    <main className="min-h-screen bg-[#121214] text-white flex flex-col items-center justify-start p-4 sm:p-6 selection:bg-[#E84142] selection:text-white">
+    <main className="min-h-screen bg-[#111827] text-white flex flex-col items-center justify-start p-4 sm:p-6 selection:bg-[#0A58CA] selection:text-white">
       {/* Mobile-first centered app container (PWA design, 390px - 430px) */}
       <div className="w-full max-w-md flex flex-col gap-5">
         {/* Header Component with Web3 Connection & Avalanche Fuji Status */}

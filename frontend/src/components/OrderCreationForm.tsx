@@ -32,7 +32,7 @@ export const OrderCreationForm: React.FC<OrderCreationFormProps> = ({
   carrierPayout,
 }) => {
   return (
-    <div className="glass-panel rounded-2xl p-5 flex flex-col gap-4 border border-white/10 shadow-xl bg-[#27272A]/90">
+    <div className="glass-panel rounded-2xl p-5 flex flex-col gap-4 border border-white/10 shadow-xl bg-[#1F2937]/90">
       {/* Header card */}
       <div className="flex items-center justify-between border-b border-white/10 pb-3">
         <div>
@@ -48,18 +48,18 @@ export const OrderCreationForm: React.FC<OrderCreationFormProps> = ({
 
       <div className="flex flex-col gap-3.5 text-xs">
         {/* Route Details Box */}
-        <div className="bg-[#18181B] p-3.5 rounded-xl border border-white/5 flex flex-col gap-1.5 shadow-inner">
+        <div className="bg-[#0F172A] p-3.5 rounded-xl border border-white/5 flex flex-col gap-1.5 shadow-inner">
           <div className="flex justify-between items-center">
             <span className="text-slate-400 text-[10px] font-mono uppercase tracking-wider">
               Ruta Internacional de Carga
             </span>
-            <span className="text-[10px] text-[#E84142] font-mono font-bold">1,200 KM</span>
+            <span className="text-[10px] text-[#0A58CA] font-mono font-bold">1,200 KM</span>
           </div>
 
           <div className="flex items-center gap-2 text-white font-semibold py-1">
             <span className="text-sm">🇨🇱</span>
             <span className="truncate">{origin}</span>
-            <span className="text-[#E84142] font-bold">➔</span>
+            <span className="text-[#0A58CA] font-bold">➔</span>
             <span className="text-sm">🇧🇴</span>
             <span className="truncate">{destination}</span>
           </div>
@@ -73,14 +73,14 @@ export const OrderCreationForm: React.FC<OrderCreationFormProps> = ({
         {/* Manifest ID Input */}
         <div>
           <label className="text-slate-300 text-[11px] font-medium block mb-1">
-            ID de Manifiesto Aduanero (<span className="font-mono text-[#E84142]">MIC/DTA</span>)
+            ID de Manifiesto Aduanero (<span className="font-mono text-[#0A58CA]">MIC/DTA</span>)
           </label>
           <input
             type="text"
             value={manifestId}
             onChange={(e) => setManifestId(e.target.value)}
             placeholder="MIC-DTA-2026-AR-BO-XXXX"
-            className="w-full bg-[#18181B] border border-white/10 rounded-xl px-3 py-2 text-white font-mono text-xs focus:outline-none focus:border-[#E84142] transition-all"
+            className="w-full bg-[#0F172A] border border-white/10 rounded-xl px-3 py-2 text-white font-mono text-xs focus:outline-none focus:border-[#0A58CA] transition-all"
           />
         </div>
 
@@ -95,7 +95,7 @@ export const OrderCreationForm: React.FC<OrderCreationFormProps> = ({
               type="number"
               value={frightAmount}
               onChange={(e) => setFrightAmount(e.target.value)}
-              className="w-full bg-[#18181B] border border-white/10 rounded-xl pl-8 pr-16 py-2.5 text-white font-mono font-extrabold text-sm focus:outline-none focus:border-[#E84142] transition-all"
+              className="w-full bg-[#0F172A] border border-white/10 rounded-xl pl-8 pr-16 py-2.5 text-white font-mono font-extrabold text-sm focus:outline-none focus:border-[#0A58CA] transition-all"
             />
             <span className="absolute right-3.5 top-2.5 text-[#10B981] font-mono text-xs font-bold">
               USDC
@@ -112,12 +112,12 @@ export const OrderCreationForm: React.FC<OrderCreationFormProps> = ({
             type="text"
             value={carrierAddress}
             onChange={(e) => setCarrierAddress(e.target.value)}
-            className="w-full bg-[#18181B]/60 border border-white/5 rounded-xl px-3 py-2 text-slate-400 font-mono text-xs"
+            className="w-full bg-[#0F172A]/60 border border-white/5 rounded-xl px-3 py-2 text-slate-400 font-mono text-xs"
           />
         </div>
 
         {/* Breakdown box */}
-        <div className="bg-[#18181B] p-3 rounded-xl border border-white/5 text-[11px] flex flex-col gap-1.5 text-slate-400">
+        <div className="bg-[#0F172A] p-3 rounded-xl border border-white/5 text-[11px] flex flex-col gap-1.5 text-slate-400">
           <div className="flex justify-between">
             <span>Pago al Transportista (99.5%):</span>
             <span className="font-mono text-white font-bold">${carrierPayout} USDC</span>
@@ -141,7 +141,7 @@ export const OrderCreationForm: React.FC<OrderCreationFormProps> = ({
 
           <button
             onClick={onCreateOrderDirect}
-            className="w-full py-3 rounded-xl bg-[#E84142] hover:bg-[#D03738] text-white font-extrabold text-xs shadow-lg shadow-[#E84142]/30 active:scale-[0.98] transition-all flex items-center justify-center gap-1.5"
+            className="w-full py-3 rounded-xl bg-gradient-to-r from-[#0A58CA] to-[#E84142] hover:opacity-95 text-white font-extrabold text-xs shadow-lg shadow-[#0A58CA]/30 active:scale-[0.98] transition-all flex items-center justify-center gap-1.5"
           >
             <span>🔒</span> Bloquear ${frightAmount} USDC en Smart Contract
           </button>

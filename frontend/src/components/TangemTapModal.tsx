@@ -64,9 +64,9 @@ export const TangemTapModal: React.FC<TangemTapModalProps> = ({
   };
 
   return (
-    <div className="glass-panel-glow rounded-2xl p-5 flex flex-col gap-4 items-center text-center border border-[#E84142]/30 shadow-2xl bg-[#27272A]/95 w-full">
+    <div className="glass-panel-glow rounded-2xl p-5 flex flex-col gap-4 items-center text-center border border-[#0A58CA]/40 shadow-2xl bg-[#1F2937]/95 w-full">
       {/* Badge */}
-      <span className="text-[10px] font-mono px-3 py-1 rounded-full bg-[#E84142]/20 text-[#E84142] border border-[#E84142]/40 font-bold uppercase tracking-wider">
+      <span className="text-[10px] font-mono px-3 py-1 rounded-full bg-[#0A58CA]/20 text-blue-300 border border-[#0A58CA]/40 font-bold uppercase tracking-wider">
         Confirmación Física Presencial Hardware
       </span>
 
@@ -77,16 +77,16 @@ export const TangemTapModal: React.FC<TangemTapModalProps> = ({
         </p>
       </div>
 
-      {/* Tangem Physical Card Graphical Representation with Holographic Effect */}
+      {/* Tangem Physical Card Graphical Representation with Sapphire & Crimson Holographic Effect */}
       <div className="relative my-3 flex items-center justify-center">
         {isScanningNfc && (
-          <div className="absolute w-48 h-48 rounded-full border border-[#E84142]/60 nfc-pulse-ring"></div>
+          <div className="absolute w-48 h-48 rounded-full border border-[#0A58CA]/60 nfc-pulse-ring"></div>
         )}
 
         <div
           className={`tangem-card w-60 h-36 rounded-2xl p-4 flex flex-col justify-between text-left transition-all duration-500 cursor-pointer ${
             isScanningNfc
-              ? "scale-105 shadow-2xl shadow-[#E84142]/50 border-[#E84142]"
+              ? "scale-105 shadow-2xl shadow-[#0A58CA]/50 border-[#0A58CA]"
               : tapSuccess
               ? "border-[#10B981] shadow-2xl shadow-[#10B981]/40"
               : "hover:scale-[1.02]"
@@ -94,7 +94,7 @@ export const TangemTapModal: React.FC<TangemTapModalProps> = ({
           onClick={!tapSuccess ? handleTangemTap : undefined}
         >
           <div className="flex justify-between items-center">
-            <span className="text-[10px] font-mono font-bold tracking-widest text-slate-300 flex items-center gap-1">
+            <span className="text-[10px] font-mono font-bold tracking-widest text-slate-200 flex items-center gap-1">
               <span className="w-2 h-2 rounded-full bg-[#E84142]"></span> TANGEM NFC
             </span>
             <div className="w-6 h-4 rounded bg-amber-400/90 border border-amber-200 shadow-inner flex items-center justify-center text-[7px] font-bold text-black">
@@ -103,7 +103,7 @@ export const TangemTapModal: React.FC<TangemTapModalProps> = ({
           </div>
 
           <div>
-            <p className="text-[9px] text-slate-400 font-mono tracking-wider">
+            <p className="text-[9px] text-slate-300 font-mono tracking-wider">
               CC EAL6+ SECURE ELEMENT
             </p>
             <p className="text-xs font-mono font-extrabold text-white tracking-wider">
@@ -115,7 +115,7 @@ export const TangemTapModal: React.FC<TangemTapModalProps> = ({
             </p>
           </div>
 
-          <div className="flex justify-between items-end text-[9px] font-mono text-slate-400">
+          <div className="flex justify-between items-end text-[9px] font-mono text-slate-300">
             <span>ROUTE PAY PROTOCOL</span>
             <span className={tapSuccess ? "text-[#10B981] font-bold" : "text-[#E84142]"}>
               {tapSuccess ? "HARDWARE VERIFIED" : "TAP TO SIGN"}
@@ -135,7 +135,7 @@ export const TangemTapModal: React.FC<TangemTapModalProps> = ({
         <button
           onClick={handleTangemTap}
           disabled={isScanningNfc}
-          className="w-full py-3.5 rounded-xl bg-gradient-to-r from-[#E84142] via-[#D03738] to-[#1E3A8A] text-white font-black text-sm shadow-xl shadow-[#E84142]/30 hover:opacity-95 active:scale-[0.98] transition-all flex items-center justify-center gap-2"
+          className="w-full py-3.5 rounded-xl bg-gradient-to-r from-[#0A58CA] via-[#1D4ED8] to-[#E84142] text-white font-black text-sm shadow-xl shadow-[#0A58CA]/30 hover:opacity-95 active:scale-[0.98] transition-all flex items-center justify-center gap-2"
         >
           {isScanningNfc ? (
             <>
@@ -167,7 +167,7 @@ export const TangemTapModal: React.FC<TangemTapModalProps> = ({
             <span className="font-bold text-slate-300">${protocolFee} USDC</span>
           </div>
 
-          <div className="text-[10px] text-cyan-300 font-mono mt-1 pt-2 border-t border-white/10 break-all flex items-center justify-between">
+          <div className="text-[10px] text-blue-300 font-mono mt-1 pt-2 border-t border-white/10 break-all flex items-center justify-between">
             <span>Tx Avalanche:</span>
             <span className="text-slate-400">0x9a8f27b4e61d8892f3e1...</span>
           </div>
@@ -184,7 +184,7 @@ export const TangemTapModal: React.FC<TangemTapModalProps> = ({
         </button>
 
         {showTooltip && (
-          <div className="mt-2 p-3 bg-[#18181B] rounded-xl border border-white/10 text-[11px] text-slate-300 leading-relaxed animate-fadeIn">
+          <div className="mt-2 p-3 bg-[#0F172A] rounded-xl border border-white/10 text-[11px] text-slate-300 leading-relaxed animate-fadeIn">
             💡 <strong className="text-white">Seguridad Anti-Fraude:</strong> Evita el fraude en factoraje al bloquear la liberación del pago en la blockchain hasta la recepción física confirmada por la clave criptográfica privada del chip hardware Tangem.
           </div>
         )}

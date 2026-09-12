@@ -22,7 +22,7 @@ export const TransitTimeline: React.FC<TransitTimelineProps> = ({
   isLoading = false,
 }) => {
   return (
-    <div className="glass-panel rounded-2xl p-5 flex flex-col gap-4 border border-white/10 shadow-xl bg-[#27272A]/90">
+    <div className="glass-panel rounded-2xl p-5 flex flex-col gap-4 border border-white/10 shadow-xl bg-[#1F2937]/90">
       {/* Header */}
       <div className="flex items-center justify-between border-b border-white/10 pb-3">
         <div>
@@ -31,19 +31,19 @@ export const TransitTimeline: React.FC<TransitTimelineProps> = ({
           </h2>
           <p className="text-[11px] text-slate-400">Seguimiento en tiempo real de flete</p>
         </div>
-        <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-[#1E3A8A] text-blue-200 border border-blue-400/30 font-semibold">
+        <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-[#0A58CA] text-blue-100 border border-blue-400/40 font-semibold">
           Orden #101
         </span>
       </div>
 
-      {/* Highlighted Escrow Card with Cobalt Blue #0D1B2A & Crypto Green #10B981 accents */}
-      <div className="bg-gradient-to-br from-[#0D1B2A] via-[#1E3A8A]/80 to-[#18181B] p-4.5 rounded-2xl border border-blue-400/30 shadow-lg relative overflow-hidden">
+      {/* Highlighted Escrow Card with Electric Sapphire #0A58CA & Crypto Green #10B981 accents */}
+      <div className="bg-gradient-to-br from-[#073B8A] via-[#0A58CA] to-[#0F172A] p-4.5 rounded-2xl border border-blue-400/30 shadow-lg relative overflow-hidden">
         <div className="flex items-center justify-between">
           <span className="flex items-center gap-1.5 text-[#10B981] text-xs font-bold font-mono">
             <span className="w-2 h-2 rounded-full bg-[#10B981] animate-pulse"></span>
             🔒 FONDOS EN CUSTODIA SMART CONTRACT
           </span>
-          <span className="text-[10px] text-slate-300 font-mono">Avalanche Fuji</span>
+          <span className="text-[10px] text-slate-200 font-mono">Avalanche Fuji</span>
         </div>
 
         <div className="text-3xl font-black font-mono text-white mt-2 flex items-baseline gap-2">
@@ -51,13 +51,13 @@ export const TransitTimeline: React.FC<TransitTimelineProps> = ({
           <span className="text-sm font-semibold text-[#10B981]">USDC</span>
         </div>
 
-        <p className="text-[11px] text-slate-300 mt-1.5 leading-relaxed">
+        <p className="text-[11px] text-slate-200 mt-1.5 leading-relaxed">
           Los fondos están bloqueados y garantizados. Se liberarán instantáneamente a tu wallet en cuanto el receptor apoye su tarjeta física Tangem NFC.
         </p>
       </div>
 
       {/* Stepper Timeline with 4 States */}
-      <div className="bg-[#18181B] p-4 rounded-xl border border-white/5 flex flex-col gap-3.5 text-xs">
+      <div className="bg-[#0F172A] p-4 rounded-xl border border-white/5 flex flex-col gap-3.5 text-xs">
         <span className="text-slate-400 text-[10px] font-mono uppercase tracking-wider font-semibold">
           Progreso del Viaje (Arica ➔ Santa Cruz)
         </span>
@@ -70,7 +70,7 @@ export const TransitTimeline: React.FC<TransitTimelineProps> = ({
                 className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold ${
                   orderStatus !== "none"
                     ? "bg-[#10B981] text-black"
-                    : "bg-[#27272A] text-slate-400 border border-white/20"
+                    : "bg-[#1F2937] text-slate-400 border border-white/20"
                 }`}
               >
                 ✓
@@ -93,7 +93,7 @@ export const TransitTimeline: React.FC<TransitTimelineProps> = ({
                 className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold ${
                   orderStatus === "funded" || orderStatus === "in_transit" || orderStatus === "settled"
                     ? "bg-[#10B981] text-black"
-                    : "bg-[#27272A] text-slate-400 border border-white/20"
+                    : "bg-[#1F2937] text-slate-400 border border-white/20"
                 }`}
               >
                 {orderStatus === "funded" || orderStatus === "in_transit" || orderStatus === "settled" ? "✓" : "2"}
@@ -122,7 +122,7 @@ export const TransitTimeline: React.FC<TransitTimelineProps> = ({
                 className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold ${
                   orderStatus === "in_transit" || orderStatus === "settled"
                     ? "bg-[#E84142] text-white animate-pulse"
-                    : "bg-[#27272A] text-slate-400 border border-white/20"
+                    : "bg-[#1F2937] text-slate-400 border border-white/20"
                 }`}
               >
                 {orderStatus === "settled" ? "✓" : "3"}
@@ -159,7 +159,7 @@ export const TransitTimeline: React.FC<TransitTimelineProps> = ({
                 className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold ${
                   orderStatus === "settled"
                     ? "bg-[#10B981] text-black"
-                    : "bg-[#27272A] text-slate-400 border border-white/20"
+                    : "bg-[#1F2937] text-slate-400 border border-white/20"
                 }`}
               >
                 {orderStatus === "settled" ? "✓" : "4"}
@@ -187,7 +187,7 @@ export const TransitTimeline: React.FC<TransitTimelineProps> = ({
         <button
           onClick={onOpenTruckModal}
           type="button"
-          className="w-full py-2 rounded-xl bg-[#18181B] hover:bg-[#323236] text-slate-300 hover:text-[#E84142] font-mono text-[11px] border border-white/10 transition-all flex items-center justify-center gap-1.5 shadow-sm"
+          className="w-full py-2 rounded-xl bg-[#0F172A] hover:bg-[#374151] text-slate-200 hover:text-[#0A58CA] font-mono text-[11px] border border-white/10 transition-all flex items-center justify-center gap-1.5 shadow-sm"
         >
           <span>🚚</span> Ver animación del camión en ruta (Demo)
         </button>
@@ -198,7 +198,7 @@ export const TransitTimeline: React.FC<TransitTimelineProps> = ({
         <button
           onClick={onStartTransit}
           disabled={isLoading}
-          className="w-full py-3 rounded-xl bg-[#1E3A8A] hover:bg-[#2546A5] text-white font-extrabold text-xs shadow-lg shadow-[#1E3A8A]/40 active:scale-[0.98] transition-all disabled:opacity-50 flex items-center justify-center gap-2 border border-blue-400/30"
+          className="w-full py-3 rounded-xl bg-[#0A58CA] hover:bg-[#073B8A] text-white font-extrabold text-xs shadow-lg shadow-[#0A58CA]/40 active:scale-[0.98] transition-all disabled:opacity-50 flex items-center justify-center gap-2 border border-blue-400/30"
         >
           <span>🚛</span> {isLoading ? "Registrando salida en Fuji..." : "Confirmar Salida de Puerto (Iniciar Tránsito)"}
         </button>
