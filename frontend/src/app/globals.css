@@ -96,13 +96,13 @@ body {
     stroke-dashoffset: 0;
   }
   100% {
-    stroke-dashoffset: -40;
+    stroke-dashoffset: -48;
   }
 }
 
 .road-moving-dashes {
   stroke-dasharray: 12 12;
-  animation: road-dashes 0.5s linear infinite;
+  animation: road-dashes 0.35s linear infinite;
 }
 
 @keyframes truck-bounce {
@@ -115,7 +115,7 @@ body {
 }
 
 .truck-bouncing {
-  animation: truck-bounce 0.6s ease-in-out infinite;
+  animation: truck-bounce 0.5s ease-in-out infinite;
 }
 
 @keyframes headlight-beam {
@@ -131,13 +131,55 @@ body {
   animation: headlight-beam 1.2s ease-in-out infinite;
 }
 
+@keyframes wheel-spin {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+.wheel-spinning {
+  transform-origin: center;
+  animation: wheel-spin 0.4s linear infinite;
+}
+
+@keyframes dust-drift {
+  0% {
+    transform: translateX(0) scale(0.8);
+    opacity: 0.7;
+  }
+  100% {
+    transform: translateX(-15px) scale(1.6);
+    opacity: 0;
+  }
+}
+
+.dust-particles {
+  animation: dust-drift 0.6s ease-out infinite;
+}
+
+@keyframes star-twinkle {
+  0%, 100% {
+    opacity: 0.3;
+  }
+  50% {
+    opacity: 0.9;
+  }
+}
+
+.star-field {
+  animation: star-twinkle 2s ease-in-out infinite alternate;
+}
+
 @keyframes success-pop {
   0% {
-    transform: scale(0.7);
+    transform: scale(0.85);
     opacity: 0;
   }
   70% {
-    transform: scale(1.08);
+    transform: scale(1.04);
     opacity: 1;
   }
   100% {

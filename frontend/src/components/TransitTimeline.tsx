@@ -5,6 +5,10 @@ interface TransitTimelineProps {
   carrierPayout: string;
   onStartTransit: () => void;
   onGoToTangemTap: () => void;
+  onOpenTruckModal?: () => void;
+  txHash?: string | null;
+  explorerUrl?: string;
+  isLoading?: boolean;
 }
 
 export const TransitTimeline: React.FC<TransitTimelineProps> = ({
@@ -12,6 +16,10 @@ export const TransitTimeline: React.FC<TransitTimelineProps> = ({
   carrierPayout,
   onStartTransit,
   onGoToTangemTap,
+  onOpenTruckModal,
+  txHash,
+  explorerUrl = "https://testnet.snowtrace.io",
+  isLoading = false,
 }) => {
   return (
     <div className="glass-panel rounded-2xl p-5 flex flex-col gap-4 border border-white/10 shadow-xl bg-[#27272A]/90">
@@ -44,7 +52,7 @@ export const TransitTimeline: React.FC<TransitTimelineProps> = ({
         </div>
 
         <p className="text-[11px] text-slate-300 mt-1.5 leading-relaxed">
-          Los fondos están bloqueados y garantizados. Se liberarás instantáneamente a tu wallet en cuanto el receptor apoye su tarjeta física Tangem NFC.
+          Los fondos están bloqueados y garantizados. Se liberarán instantáneamente a tu wallet en cuanto el receptor apoye su tarjeta física Tangem NFC.
         </p>
       </div>
 
@@ -174,13 +182,25 @@ export const TransitTimeline: React.FC<TransitTimelineProps> = ({
         </div>
       </div>
 
+      {/* Demo helper button to show Cyber-Truck road animation anytime */}
+      {onOpenTruckModal && (
+        <button
+          onClick={onOpenTruckModal}
+          type="button"
+          className="w-full py-2 rounded-xl bg-[#18181B] hover:bg-[#323236] text-slate-300 hover:text-[#E84142] font-mono text-[11px] border border-white/10 transition-all flex items-center justify-center gap-1.5 shadow-sm"
+        >
+          <span>🚚</span> Ver animación del camión en ruta (Demo)
+        </button>
+      )}
+
       {/* Dynamic Actions */}
       {orderStatus === "funded" && (
         <button
           onClick={onStartTransit}
-          className="w-full py-3 rounded-xl bg-[#1E3A8A] hover:bg-[#2546A5] text-white font-extrabold text-xs shadow-lg shadow-[#1E3A8A]/40 active:scale-[0.98] transition-all flex items-center justify-center gap-2 border border-blue-400/30"
+          disabled={isLoading}
+          className="w-full py-3 rounded-xl bg-[#1E3A8A] hover:bg-[#2546A5] text-white font-extrabold text-xs shadow-lg shadow-[#1E3A8A]/40 active:scale-[0.98] transition-all disabled:opacity-50 flex items-center justify-center gap-2 border border-blue-400/30"
         >
-          <span>🚛</span> Confirmar Salida de Puerto (Iniciar Tránsito)
+          <span>🚛</span> {isLoading ? "Registrando salida en Fuji..." : "Confirmar Salida de Puerto (Iniciar Tránsito)"}
         </button>
       )}
 
@@ -199,6 +219,16 @@ export const TransitTimeline: React.FC<TransitTimelineProps> = ({
           <p className="text-[11px] text-slate-300">
             ${carrierPayout} USDC acreditados inmediatamente a tu billetera
           </p>
+          {txHash && (
+            <a
+              href={`${explorerUrl}/tx/${txHash}`}
+              target="_blank"
+              rel="noreferrer"
+              className="inline-block mt-1 text-[10px] font-mono text-[#10B981] hover:underline break-all"
+            >
+              Ver Tx en SnowTrace ↗ ({txHash.slice(0, 16)}...)
+            </a>
+          )}
         </div>
       )}
     </div>
