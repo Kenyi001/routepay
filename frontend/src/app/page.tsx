@@ -4,6 +4,8 @@ import React, { useState } from "react";
 import { useWeb3 } from "@/context/Web3Context";
 import { useTradeEscrow } from "@/hooks/useTradeEscrow";
 
+import TruckTransitModal from "@/components/TruckTransitModal";
+
 type Role = "importer" | "carrier" | "warehouse";
 
 export default function RoutePayApp() {
@@ -22,6 +24,7 @@ export default function RoutePayApp() {
   const [isScanningNfc, setIsScanningNfc] = useState(false);
   const [tapSuccess, setTapSuccess] = useState(false);
   const [nfcError, setNfcError] = useState<string | null>(null);
+  const [isTruckModalOpen, setIsTruckModalOpen] = useState(false);
 
   // Form state
   const [origin] = useState("Puerto de Arica, Chile");
@@ -47,6 +50,7 @@ export default function RoutePayApp() {
   };
 
   const handleStartTransit = async () => {
+    setIsTruckModalOpen(true);
     const res = await startTransit(BigInt(1));
     if (res.success) {
       setOrderStatus("in_transit");
@@ -306,11 +310,21 @@ export default function RoutePayApp() {
               <button
                 onClick={handleStartTransit}
                 disabled={isLoading}
-                className="w-full py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-medium text-xs border border-white/10 transition-all disabled:opacity-50"
+                className="w-full py-3 rounded-xl bg-gradient-to-r from-amber-500 to-orange-400 text-black font-extrabold text-xs shadow-lg shadow-amber-500/20 hover:opacity-95 active:scale-[0.98] transition-all disabled:opacity-50 flex items-center justify-center gap-2"
               >
-                {isLoading ? "Registrando salida en Fuji..." : "Confirmar Salida de Puerto (Iniciar Tránsito)"}
+                <span>🚛</span>
+                {isLoading ? "Registrando salida en Fuji..." : "Confirmar Salida de Puerto (Ver Camión en Ruta)"}
               </button>
             )}
+
+            {/* Botón rápido para testear la animación del camión en cualquier momento */}
+            <button
+              onClick={() => setIsTruckModalOpen(true)}
+              type="button"
+              className="w-full py-2 rounded-xl bg-slate-900/90 hover:bg-slate-800 text-slate-300 hover:text-cyan-400 font-mono text-[11px] border border-white/10 transition-all flex items-center justify-center gap-1.5"
+            >
+              <span>🚚</span> Ver animación del camión en ruta (Demo)
+            </button>
 
             {orderStatus === "in_transit" && (
               <button
@@ -418,6 +432,15 @@ export default function RoutePayApp() {
           <span>Avalanche Fuji · Pollar · Tangem</span>
         </footer>
       </div>
+
+      {/* Modal interactivo con animación del camión en ruta */}
+      <TruckTransitModal
+        isOpen={isTruckModalOpen}
+        onClose={() => setIsTruckModalOpen(false)}
+        orderId="1"
+        manifestId={manifestId}
+        amount={carrierPayout}
+      />
     </main>
   );
 }
