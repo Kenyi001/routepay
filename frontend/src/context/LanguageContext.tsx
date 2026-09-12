@@ -13,6 +13,13 @@ export const translations = {
       connecting: "Conectando...",
       disconnectTitle: "Desconectar Billetera",
     },
+    lifecycle: {
+      step1: "1. Bóveda Fondeada",
+      step2: "2. En Carretera",
+      step3: "3. Tap Tangem",
+      stepDispute: "En Disputa",
+      stepRefunded: "Reembolsado",
+    },
     roles: {
       importer: "1. Importador",
       carrier: "2. Transportista",
@@ -32,6 +39,8 @@ export const translations = {
       fundedSuccess: "✓ Orden #1 Fondeada Exitosamente",
       fundedSub: "Fondos custodiados en Avalanche Fuji",
       viewSnowtrace: "Ver Tx en SnowTrace ↗",
+      btnNextCarrier: "Siguiente: Ver como Transportista ➔",
+      timeoutGuarantee: "⏱️ Garantía de Timeout: Reembolso 100% automático si la carga no llega en 7 días.",
     },
     carrier: {
       title: "Panel del Chofer",
@@ -52,6 +61,7 @@ export const translations = {
       btnArrived: "Llegué a Destino ➔ Proceder al Tap Tangem",
       settledSuccess: "✓ ¡Flete Cobrado con Éxito!",
       settledSub: "Saldo transferido a tu billetera",
+      btnReportDispute: "⚠️ Reportar Paro o Retención en Frontera",
     },
     warehouse: {
       badge: "Confirmación Física Presencial",
@@ -84,6 +94,17 @@ export const translations = {
       btnContinue: "Continuar al Panel de Monitoreo ➔",
       registeringCoords: "Registrando coordenadas y manifiesto en Avalanche...",
     },
+    dispute: {
+      title: "Contingencia en Frontera (Tambo Quemado)",
+      desc: "El camión se encuentra demorado por revisión aduanera o bloqueo. Los fondos quedan asegurados en el contrato.",
+      status: "Estado: En Disputa (Disputed)",
+      resolveRefund: "Árbitro: Reembolsar al Importador",
+      resolvePay: "Árbitro: Liberar Fondos al Transportista",
+    },
+    activity: {
+      title: "Registro de Actividad en Smart Contract",
+      noActivity: "Esperando primer evento...",
+    },
     footer: {
       protocol: "RoutePay Protocol · ETH Bolivia",
       tracks: "Avalanche Fuji · Pollar · Tangem",
@@ -96,6 +117,13 @@ export const translations = {
       connectWallet: "Connect Wallet",
       connecting: "Connecting...",
       disconnectTitle: "Disconnect Wallet",
+    },
+    lifecycle: {
+      step1: "1. Vault Funded",
+      step2: "2. On Highway",
+      step3: "3. Tangem Tap",
+      stepDispute: "In Dispute",
+      stepRefunded: "Refunded",
     },
     roles: {
       importer: "1. Importer",
@@ -116,6 +144,8 @@ export const translations = {
       fundedSuccess: "✓ Order #1 Funded Successfully",
       fundedSub: "Funds securely escrowed on Avalanche Fuji",
       viewSnowtrace: "View Tx on SnowTrace ↗",
+      btnNextCarrier: "Next: View as Carrier ➔",
+      timeoutGuarantee: "⏱️ Timeout Guarantee: 100% automated refund if cargo is not delivered within 7 days.",
     },
     carrier: {
       title: "Carrier & Driver Dashboard",
@@ -136,6 +166,7 @@ export const translations = {
       btnArrived: "Arrived at Destination ➔ Proceed to Tangem Tap",
       settledSuccess: "✓ Freight Paid Successfully!",
       settledSub: "Balance transferred to carrier wallet",
+      btnReportDispute: "⚠️ Report Border Delay / Customs Hold",
     },
     warehouse: {
       badge: "Physical In-Person Verification",
@@ -167,6 +198,17 @@ export const translations = {
       verifiedFuji: "Verified on Fuji",
       btnContinue: "Continue to Monitoring Dashboard ➔",
       registeringCoords: "Registering coordinates and manifest on Avalanche...",
+    },
+    dispute: {
+      title: "Customs Contingency (Tambo Quemado)",
+      desc: "Truck is detained at the border due to inspection or roadblock. Funds remain cryptographically locked in contract.",
+      status: "Status: In Dispute",
+      resolveRefund: "Arbiter: Refund to Importer",
+      resolvePay: "Arbiter: Release to Carrier",
+    },
+    activity: {
+      title: "Live Smart Contract Activity Log",
+      noActivity: "Waiting for first on-chain event...",
     },
     footer: {
       protocol: "RoutePay Protocol · ETH Bolivia",

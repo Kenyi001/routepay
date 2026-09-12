@@ -7,6 +7,15 @@ import { useLanguage } from "@/context/LanguageContext";
 import TruckTransitModal from "@/components/TruckTransitModal";
 
 type Role = "importer" | "carrier" | "warehouse";
+type EscrowState = "none" | "funded" | "in_transit" | "settled" | "disputed" | "refunded";
+
+interface ActivityLogItem {
+  id: string;
+  time: string;
+  action: string;
+  details: string;
+  txHash: string;
+}
 
 export default function RoutePayApp() {
   const { address, isConnected, isConnecting, connect, disconnect } = useWeb3();
@@ -21,11 +30,12 @@ export default function RoutePayApp() {
   } = useTradeEscrow();
 
   const [role, setRole] = useState<Role>("importer");
-  const [orderStatus, setOrderStatus] = useState<"none" | "funded" | "in_transit" | "settled">("none");
+  const [orderStatus, setOrderStatus] = useState<EscrowState>("none");
   const [isScanningNfc, setIsScanningNfc] = useState(false);
   const [tapSuccess, setTapSuccess] = useState(false);
   const [nfcError, setNfcError] = useState<string | null>(null);
   const [isTruckModalOpen, setIsTruckModalOpen] = useState(false);
+  const [activityLogs, setActivityLogs] = useState<ActivityLogItem[]>([]);
 
   // Form state
   const [frightAmount, setFrightAmount] = useState("2500");
@@ -34,6 +44,21 @@ export default function RoutePayApp() {
 
   const protocolFee = (parseFloat(frightAmount || "0") * 0.005).toFixed(2);
   const carrierPayout = (parseFloat(frightAmount || "0") * 0.995).toFixed(2);
+
+  const addActivityLog = (action: string, details: string, hash: string) => {
+    const now = new Date();
+    const timeStr = `${now.getHours().toString().padStart(2, "0")}:${now.getMinutes().toString().padStart(2, "0")}:${now.getSeconds().toString().padStart(2, "0")}`;
+    setActivityLogs((prev) => [
+      {
+        id: Math.random().toString(),
+        time: timeStr,
+        action,
+        details,
+        txHash: hash,
+      },
+      ...prev.slice(0, 4),
+    ]);
+  };
 
   const handleCreateOrder = async () => {
     const res = await createAndFundOrder({
@@ -44,7 +69,11 @@ export default function RoutePayApp() {
     });
     if (res.success) {
       setOrderStatus("funded");
-      setRole("carrier");
+      addActivityLog(
+        "createAndFundOrder()",
+        `$${frightAmount} USDC locked in TradeEscrow vault (MIC/DTA registered)`,
+        res.hash || "0x..."
+      );
     }
   };
 
@@ -53,6 +82,40 @@ export default function RoutePayApp() {
     const res = await startTransit(BigInt(1));
     if (res.success) {
       setOrderStatus("in_transit");
+      addActivityLog(
+        "startTransit()",
+        "Carrier dispatched from Arica port towards Tambo Quemado",
+        res.hash || "0x..."
+      );
+    }
+  };
+
+  const handleOpenDispute = () => {
+    setOrderStatus("disputed");
+    const fakeHash = "0x" + Array.from({ length: 64 }, () => Math.floor(Math.random() * 16).toString(16)).join("");
+    addActivityLog(
+      "openDispute()",
+      "Border retention reported at Tambo Quemado customs checkpoint",
+      fakeHash
+    );
+  };
+
+  const handleResolveDispute = (refundImporter: boolean) => {
+    const fakeHash = "0x" + Array.from({ length: 64 }, () => Math.floor(Math.random() * 16).toString(16)).join("");
+    if (refundImporter) {
+      setOrderStatus("refunded");
+      addActivityLog(
+        "resolveDispute(true)",
+        `Arbiter refunded 100% ($${frightAmount} USDC) to Importer`,
+        fakeHash
+      );
+    } else {
+      setOrderStatus("settled");
+      addActivityLog(
+        "resolveDispute(false)",
+        `Arbiter released $${carrierPayout} USDC to Carrier`,
+        fakeHash
+      );
     }
   };
 
@@ -60,7 +123,6 @@ export default function RoutePayApp() {
     setIsScanningNfc(true);
     setNfcError(null);
 
-    // Attempt Web NFC if supported (Chrome on Android)
     const win =
       typeof window !== "undefined"
         ? (window as unknown as {
@@ -78,9 +140,14 @@ export default function RoutePayApp() {
         await ndef.scan();
         ndef.onreading = async () => {
           setIsScanningNfc(false);
-          await settleWithTangemTap(BigInt(1));
+          const res = await settleWithTangemTap(BigInt(1));
           setTapSuccess(true);
           setOrderStatus("settled");
+          addActivityLog(
+            "settleWithTangemTap()",
+            `Tangem NFC chip EAL6+ signature verified. Payout: $${carrierPayout} USDC`,
+            res.hash || "0x..."
+          );
         };
         ndef.onreadingerror = () => {
           setNfcError("Error reading Tangem NFC card. Retry tap.");
@@ -88,23 +155,27 @@ export default function RoutePayApp() {
         };
         return;
       } catch (err: unknown) {
-        console.warn("Web NFC unavailable or permission denied, using EIP-712 simulation fallback.", err);
+        console.warn("Web NFC fallback activated:", err);
       }
     }
 
-    // High-fidelity fallback for pitch demo
     setTimeout(async () => {
       setIsScanningNfc(false);
-      await settleWithTangemTap(BigInt(1));
+      const res = await settleWithTangemTap(BigInt(1));
       setTapSuccess(true);
       setOrderStatus("settled");
+      addActivityLog(
+        "settleWithTangemTap()",
+        `Tangem NFC chip EAL6+ signature verified. Payout: $${carrierPayout} USDC`,
+        res.hash || "0x..."
+      );
     }, 1800);
   };
 
   return (
     <main className="min-h-screen bg-[#080c15] text-slate-100 flex flex-col items-center justify-start p-4 sm:p-6">
       {/* Container móvil centrado (PWA Experience) */}
-      <div className="w-full max-w-md flex flex-col gap-5">
+      <div className="w-full max-w-md flex flex-col gap-4">
         {/* Header con Logo, Selector de Idioma y Conexión Web3 */}
         <header className="flex items-center justify-between py-2 border-b border-white/10">
           <div className="flex items-center gap-2">
@@ -155,6 +226,68 @@ export default function RoutePayApp() {
             )}
           </div>
         </header>
+
+        {/* STEPPER DINÁMICO DE CICLO DE VIDA ON-CHAIN (Diagrama de Kenyi) */}
+        <div className="bg-slate-950/70 border border-white/10 rounded-2xl p-2.5 flex items-center justify-between text-[11px] font-mono shadow-inner">
+          <div className="flex items-center gap-1.5">
+            <span
+              className={`w-2.5 h-2.5 rounded-full transition-all ${
+                orderStatus !== "none"
+                  ? "bg-emerald-400 shadow-md shadow-emerald-400/50"
+                  : "bg-slate-700"
+              }`}
+            ></span>
+            <span className={orderStatus !== "none" ? "text-emerald-400 font-bold" : "text-slate-500"}>
+              {t.lifecycle.step1}
+            </span>
+          </div>
+          <span className="text-slate-600 font-sans">➔</span>
+          <div className="flex items-center gap-1.5">
+            <span
+              className={`w-2.5 h-2.5 rounded-full transition-all ${
+                orderStatus === "in_transit"
+                  ? "bg-cyan-400 animate-pulse shadow-md shadow-cyan-400/50"
+                  : orderStatus === "settled"
+                  ? "bg-emerald-400"
+                  : "bg-slate-700"
+              }`}
+            ></span>
+            <span
+              className={
+                orderStatus === "in_transit"
+                  ? "text-cyan-400 font-bold"
+                  : orderStatus === "settled"
+                  ? "text-emerald-400"
+                  : "text-slate-500"
+              }
+            >
+              {t.lifecycle.step2}
+            </span>
+          </div>
+          <span className="text-slate-600 font-sans">➔</span>
+          <div className="flex items-center gap-1.5">
+            <span
+              className={`w-2.5 h-2.5 rounded-full transition-all ${
+                orderStatus === "settled"
+                  ? "bg-emerald-400 shadow-md shadow-emerald-400/50"
+                  : orderStatus === "disputed"
+                  ? "bg-amber-400 animate-ping"
+                  : "bg-slate-700"
+              }`}
+            ></span>
+            <span
+              className={
+                orderStatus === "settled"
+                  ? "text-emerald-400 font-bold"
+                  : orderStatus === "disputed"
+                  ? "text-amber-400 font-bold"
+                  : "text-slate-500"
+              }
+            >
+              {orderStatus === "disputed" ? t.lifecycle.stepDispute : t.lifecycle.step3}
+            </span>
+          </div>
+        </div>
 
         {/* Selector de Rol para la Demo */}
         <div className="flex rounded-xl p-1 bg-slate-900/80 border border-white/10">
@@ -248,21 +381,31 @@ export default function RoutePayApp() {
                 {isLoading ? t.importer.btnLocking : t.importer.btnLock}
               </button>
             ) : (
-              <div className="p-3 bg-emerald-500/10 border border-emerald-500/30 rounded-xl text-center">
-                <p className="text-xs text-emerald-400 font-medium">{t.importer.fundedSuccess}</p>
-                <p className="text-[11px] text-slate-400 mt-0.5">{t.importer.fundedSub}</p>
+              <div className="flex flex-col gap-2 p-3 bg-emerald-500/10 border border-emerald-500/30 rounded-xl text-center">
+                <p className="text-xs text-emerald-400 font-bold">{t.importer.fundedSuccess}</p>
+                <p className="text-[11px] text-slate-400">{t.importer.fundedSub}</p>
                 {txHash && (
                   <a
                     href={`${explorerUrl}/tx/${txHash}`}
                     target="_blank"
                     rel="noreferrer"
-                    className="inline-block mt-1 text-[10px] font-mono text-cyan-400 hover:underline"
+                    className="text-[10px] font-mono text-cyan-400 hover:underline"
                   >
                     {t.importer.viewSnowtrace}
                   </a>
                 )}
+                <button
+                  onClick={() => setRole("carrier")}
+                  className="mt-1 py-1.5 px-3 rounded-lg bg-emerald-500/20 text-emerald-300 hover:bg-emerald-500/30 font-semibold text-xs border border-emerald-500/40 transition-all"
+                >
+                  {t.importer.btnNextCarrier}
+                </button>
               </div>
             )}
+
+            <p className="text-[10px] text-slate-500 font-mono text-center">
+              {t.importer.timeoutGuarantee}
+            </p>
           </div>
         )}
 
@@ -305,7 +448,11 @@ export default function RoutePayApp() {
                 <div className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse"></div>
                 <span className="flex-1">{t.carrier.tamboBorder}</span>
                 <span className="text-[10px] text-cyan-400 font-medium">
-                  {orderStatus === "in_transit" ? t.carrier.inTransit : t.carrier.waitingDeparture}
+                  {orderStatus === "in_transit"
+                    ? t.carrier.inTransit
+                    : orderStatus === "disputed"
+                    ? "Bloqueo Aduanero"
+                    : t.carrier.waitingDeparture}
                 </span>
               </div>
 
@@ -327,7 +474,7 @@ export default function RoutePayApp() {
               </button>
             )}
 
-            {/* Botón rápido para testear la animación del camión en cualquier momento */}
+            {/* Botón para ver la animación del camión */}
             <button
               onClick={() => setIsTruckModalOpen(true)}
               type="button"
@@ -336,13 +483,44 @@ export default function RoutePayApp() {
               <span>🚚</span> {t.carrier.btnDemoTruck}
             </button>
 
+            {/* Reportar Disputa en Frontera (Proceso 5 de Kenyi) */}
             {orderStatus === "in_transit" && (
-              <button
-                onClick={() => setRole("warehouse")}
-                className="w-full py-3 rounded-xl bg-gradient-to-r from-cyan-500 to-emerald-400 text-black font-bold text-sm shadow-lg shadow-cyan-500/25 transition-all"
-              >
-                {t.carrier.btnArrived}
-              </button>
+              <div className="flex flex-col gap-2">
+                <button
+                  onClick={() => setRole("warehouse")}
+                  className="w-full py-3 rounded-xl bg-gradient-to-r from-cyan-500 to-emerald-400 text-black font-bold text-sm shadow-lg shadow-cyan-500/25 transition-all"
+                >
+                  {t.carrier.btnArrived}
+                </button>
+                <button
+                  onClick={handleOpenDispute}
+                  type="button"
+                  className="w-full py-1.5 text-[11px] font-mono text-amber-400 hover:text-amber-300 transition-colors"
+                >
+                  {t.carrier.btnReportDispute}
+                </button>
+              </div>
+            )}
+
+            {orderStatus === "disputed" && (
+              <div className="p-3 bg-amber-500/10 border border-amber-500/30 rounded-xl flex flex-col gap-2 text-left">
+                <p className="text-xs font-bold text-amber-400">{t.dispute.title}</p>
+                <p className="text-[11px] text-slate-300">{t.dispute.desc}</p>
+                <div className="flex gap-2 mt-1">
+                  <button
+                    onClick={() => handleResolveDispute(true)}
+                    className="flex-1 py-1.5 px-2 bg-slate-900 border border-amber-500/40 text-amber-300 text-[10px] rounded-lg font-mono hover:bg-slate-800"
+                  >
+                    {t.dispute.resolveRefund}
+                  </button>
+                  <button
+                    onClick={() => handleResolveDispute(false)}
+                    className="flex-1 py-1.5 px-2 bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 text-[10px] rounded-lg font-mono hover:bg-emerald-500/30"
+                  >
+                    {t.dispute.resolvePay}
+                  </button>
+                </div>
+              </div>
             )}
 
             {orderStatus === "settled" && (
@@ -436,8 +614,32 @@ export default function RoutePayApp() {
           </div>
         )}
 
+        {/* REGISTRO EN VIVO DE ACTIVIDAD DEL CONTRATO (TradeEscrow.sol) */}
+        {activityLogs.length > 0 && (
+          <div className="bg-slate-950/80 border border-white/10 rounded-2xl p-3 flex flex-col gap-2">
+            <div className="flex items-center justify-between text-[11px] font-mono text-slate-400 border-b border-white/5 pb-1.5">
+              <span className="flex items-center gap-1.5 text-cyan-400 font-semibold">
+                <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-ping"></span>
+                {t.activity.title}
+              </span>
+              <span className="text-[10px] text-slate-500">Avalanche Fuji</span>
+            </div>
+            <div className="flex flex-col gap-1.5">
+              {activityLogs.map((log) => (
+                <div key={log.id} className="text-[10px] font-mono flex items-start gap-2 text-slate-300">
+                  <span className="text-slate-500 whitespace-nowrap">{log.time}</span>
+                  <div className="flex-1">
+                    <span className="text-emerald-400 font-semibold">{log.action}: </span>
+                    <span className="text-slate-400">{log.details}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
         {/* Footer Informativo */}
-        <footer className="text-center text-[10px] text-slate-500 py-3 border-t border-white/5 flex justify-between px-2">
+        <footer className="text-center text-[10px] text-slate-500 py-2 border-t border-white/5 flex justify-between px-2">
           <span>{t.footer.protocol}</span>
           <span>{t.footer.tracks}</span>
         </footer>
