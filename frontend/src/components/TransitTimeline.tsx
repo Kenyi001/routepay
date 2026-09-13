@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 
-export type EscrowState = "none" | "funded" | "in_transit" | "settled" | "disputed" | "refunded";
+export type EscrowState = "none" | "pending" | "funded" | "in_transit" | "settled" | "disputed" | "refunded";
 
 interface TransitTimelineProps {
   orderStatus: EscrowState;
@@ -139,9 +139,9 @@ export const TransitTimeline: React.FC<TransitTimelineProps> = ({
               <div
                 className="w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold"
                 style={{
-                  background: orderStatus !== "none" ? "var(--green-main)" : "var(--surface)",
-                  color: orderStatus !== "none" ? "#fff" : "var(--text-muted)",
-                  border: orderStatus !== "none" ? "none" : "1.5px solid var(--border)",
+                  background: orderStatus !== "none" && orderStatus !== "pending" ? "var(--green-main)" : "var(--surface)",
+                  color: orderStatus !== "none" && orderStatus !== "pending" ? "#fff" : "var(--text-muted)",
+                  border: orderStatus !== "none" && orderStatus !== "pending" ? "none" : "1.5px solid var(--border)",
                 }}
               >
                 ✓
@@ -154,7 +154,7 @@ export const TransitTimeline: React.FC<TransitTimelineProps> = ({
                   1. Inicio: Salida de Puerto Arica
                 </span>
                 <span className="text-[10px] font-mono" style={{ color: "var(--text-muted)" }}>
-                  {orderStatus !== "none" ? "Completado" : "Pendiente"}
+                  {orderStatus !== "none" && orderStatus !== "pending" ? "Completado" : "Pendiente"}
                 </span>
               </div>
               <p className="text-[11px]" style={{ color: "var(--text-secondary)" }}>
@@ -173,9 +173,9 @@ export const TransitTimeline: React.FC<TransitTimelineProps> = ({
                     orderStatus === "settled" ? "var(--green-main)"
                     : orderStatus === "in_transit" ? "var(--blue-bright)"
                     : "var(--surface)",
-                  color: orderStatus === "funded" || orderStatus === "none" ? "var(--text-muted)" : "#fff",
+                  color: orderStatus === "funded" || orderStatus === "none" || orderStatus === "pending" ? "var(--text-muted)" : "#fff",
                   border:
-                    orderStatus === "funded" || orderStatus === "none"
+                    orderStatus === "funded" || orderStatus === "none" || orderStatus === "pending"
                       ? "1.5px solid var(--border)"
                       : "none",
                 }}

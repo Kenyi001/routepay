@@ -12,7 +12,62 @@ import {
   keccak256,
   toHex,
   parseEventLogs,
+  isAddress,
 } from "viem";
+
+// Minimal ERC-20 ABI for approve + allowance
+const ERC20_ABI = [
+  {
+    name: "approve",
+    type: "function",
+    stateMutability: "nonpayable",
+    inputs: [
+      { name: "spender", type: "address" },
+      { name: "amount", type: "uint256" },
+    ],
+    outputs: [{ name: "", type: "bool" }],
+  },
+  {
+    name: "allowance",
+    type: "function",
+    stateMutability: "view",
+    inputs: [
+      { name: "owner", type: "address" },
+      { name: "spender", type: "address" },
+    ],
+    outputs: [{ name: "", type: "uint256" }],
+  },
+] as const;
+
+// Human-readable map for the known custom errors in TradeEscrow.sol
+const KNOWN_ERRORS: Record<string, string> = {
+  "0xc5723b51": "InvalidAddress — carrier or token address is zero",
+  "0x2c5211c6": "InvalidAmount — amount must be greater than zero",
+  "0xf9246640": "InvalidDuration — duration must be greater than zero",
+  "0x8e4a23d6": "Unauthorized — caller is not allowed to perform this action",
+  "0x815e1d64": "InvalidSignature — Tangem NFC signature does not match importer",
+  "0x7dc2ef95": "DeadlineNotPassed — delivery timeout has not expired yet",
+  "0xf4d678b8": "ERC20 InsufficientAllowance — approve USDC first",
+  "0xfb8f41b2": "ERC20 InsufficientBalance — not enough USDC in wallet",
+  "0xf924664d": "InvalidStatus — order is not in the expected lifecycle state",
+};
+
+function decodeContractError(err: any): string {
+  const raw: string = err?.shortMessage || err?.message || err?.reason || JSON.stringify(err);
+
+  const match = raw.match(/0x[0-9a-fA-F]{8}/);
+  if (match) {
+    const selector = match[0].toLowerCase();
+    if (KNOWN_ERRORS[selector]) return KNOWN_ERRORS[selector];
+  }
+
+  if (raw.includes("user rejected") || raw.includes("User rejected")) return "Transaction rejected by user";
+  if (raw.includes("insufficient funds")) return "Insufficient AVAX for gas fees";
+  if (raw.includes("nonce")) return "Nonce mismatch — try again";
+  if (raw.includes("allowance") || raw.includes("ERC20")) return "USDC allowance too low — approve first";
+
+  return raw.slice(0, 160);
+}
 
 export interface EscrowOrderData {
   orderId: bigint;
@@ -38,6 +93,63 @@ export function useTradeEscrow() {
       ("0x0000000000000000000000000000000000000000" as `0x${string}`)
     );
   }, []);
+
+  /**
+   * Ensures the escrow contract has enough USDC allowance from the importer,
+   * submitting an approve() tx first if the current allowance is insufficient.
+   */
+  const ensureUsdcAllowance = useCallback(
+    async (
+      ethereum: any,
+      tokenAddress: `0x${string}`,
+      amountAtomic: bigint
+    ): Promise<{ ok: boolean; error?: string }> => {
+      if (!address) return { ok: false, error: "Wallet not connected" };
+      const contractAddress = getContractAddress();
+
+      try {
+        const currentAllowance = await publicClient.readContract({
+          address: tokenAddress,
+          abi: ERC20_ABI,
+          functionName: "allowance",
+          args: [address as `0x${string}`, contractAddress],
+        });
+
+        if ((currentAllowance as bigint) >= amountAtomic) {
+          return { ok: true };
+        }
+
+        const approveCalldata = encodeFunctionData({
+          abi: ERC20_ABI,
+          functionName: "approve",
+          args: [contractAddress, amountAtomic],
+        });
+
+        const approveHash = await ethereum.request({
+          method: "eth_sendTransaction",
+          params: [{ from: address, to: tokenAddress, data: approveCalldata }],
+        });
+
+        let receipt = null;
+        for (let i = 0; i < 30; i++) {
+          await new Promise((r) => setTimeout(r, 2000));
+          receipt = await publicClient.getTransactionReceipt({
+            hash: approveHash as `0x${string}`,
+          });
+          if (receipt) break;
+        }
+
+        if (!receipt || receipt.status !== "success") {
+          return { ok: false, error: "USDC approval transaction failed" };
+        }
+
+        return { ok: true };
+      } catch (err: any) {
+        return { ok: false, error: decodeContractError(err) };
+      }
+    },
+    [address, getContractAddress]
+  );
 
   /**
    * Fetch live order details from Avalanche Fuji
@@ -86,6 +198,14 @@ export function useTradeEscrow() {
       setIsLoading(true);
       setErrorMessage(null);
 
+      // Validate the carrier address up front — a bad EIP-55 checksum must
+      // surface as a clear message, not an opaque viem exception mid-flow.
+      if (!isAddress(carrier)) {
+        setErrorMessage(`Address "${carrier}" is invalid`);
+        setIsLoading(false);
+        return { success: false };
+      }
+
       const manifestHash = keccak256(toHex(manifestId));
       const durationSeconds = BigInt(durationDays * 24 * 60 * 60);
       const tokenAddress = (token || ROUTEPAY_ADDRESSES.fuji.mockUsdc) as `0x${string}`;
@@ -96,6 +216,16 @@ export function useTradeEscrow() {
       // If wallet is connected and contract is deployed, execute real transaction
       if (isConnected && address && ethereum && getContractAddress() !== "0x0000000000000000000000000000000000000000") {
         try {
+          // Auto-approve USDC allowance first — the importer only signs one
+          // extra tx the first time (or when raising the amount), never a
+          // silent failure on-chain from an unapproved spend.
+          const allowanceResult = await ensureUsdcAllowance(ethereum, tokenAddress, amountAtomic);
+          if (!allowanceResult.ok) {
+            setErrorMessage(allowanceResult.error || "USDC approval failed");
+            setIsLoading(false);
+            return { success: false };
+          }
+
           const calldata = encodeFunctionData({
             abi: TRADE_ESCROW_ABI,
             functionName: "createAndFundOrder",
@@ -138,7 +268,7 @@ export function useTradeEscrow() {
           // Real money movement was attempted — a rejected MetaMask popup or an
           // on-chain revert must surface as a failure, never a fake success.
           console.error("Live createAndFundOrder failed:", err);
-          setErrorMessage(err?.shortMessage || err?.message || "Order funding transaction failed.");
+          setErrorMessage(decodeContractError(err));
           setIsLoading(false);
           return { success: false };
         }
@@ -151,7 +281,7 @@ export function useTradeEscrow() {
       setIsLoading(false);
       return { success: true, hash: simulatedHash, orderId: "1" };
     },
-    [address, isConnected, getContractAddress]
+    [address, isConnected, getContractAddress, ensureUsdcAllowance]
   );
 
   /**
@@ -285,7 +415,7 @@ export function useTradeEscrow() {
           // surface the failure instead of silently pretending it succeeded, since
           // that would hide a real on-chain revert (e.g. missing/invalid signature).
           console.error("Live Tangem settlement failed:", err);
-          setErrorMessage(err?.shortMessage || err?.message || "Settlement transaction failed on-chain.");
+          setErrorMessage(decodeContractError(err));
           setIsLoading(false);
           return { success: false };
         }
@@ -336,7 +466,7 @@ export function useTradeEscrow() {
           return { success: true, hash };
         } catch (err: any) {
           console.error("Live refundOnTimeout failed:", err);
-          setErrorMessage(err?.shortMessage || err?.message || "Refund transaction failed on-chain.");
+          setErrorMessage(decodeContractError(err));
           setIsLoading(false);
           return { success: false };
         }

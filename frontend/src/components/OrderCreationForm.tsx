@@ -58,6 +58,23 @@ export const OrderCreationForm: React.FC<OrderCreationFormProps> = ({
       </div>
 
       {/* ─── AVISO DINÁMICO DE ESTADO DEL PEDIDO AL IMPORTADOR ─── */}
+      {orderStatus === "pending" && (
+        <div
+          className="p-3.5 rounded-xl flex items-center gap-2.5 animate-fade-up"
+          style={{ background: "rgba(245, 158, 11, 0.08)", border: "1.5px solid var(--warning)" }}
+        >
+          <span className="w-2.5 h-2.5 rounded-full flex-shrink-0 animate-pulse" style={{ background: "var(--warning)" }} />
+          <div>
+            <p className="font-black text-xs" style={{ color: "var(--warning)" }}>
+              Enviado · En espera de confirmación en Avalanche
+            </p>
+            <p className="text-[11px]" style={{ color: "var(--text-secondary)" }}>
+              Pago Pollar recibido. Confirmando la custodia de ${frightAmount} USDC en el contrato TradeEscrow...
+            </p>
+          </div>
+        </div>
+      )}
+
       {orderStatus === "in_transit" && (
         <div
           className="p-4 rounded-xl flex flex-col gap-2.5 animate-fade-up"
@@ -266,8 +283,22 @@ export const OrderCreationForm: React.FC<OrderCreationFormProps> = ({
         </div>
       </div>
 
+      {/* ─── Comparación con la vía tradicional (banco / SWIFT) ─── */}
+      <div
+        className="p-3 rounded-xl text-[10px] flex flex-col gap-1"
+        style={{ background: "var(--surface-2)", border: "1px dashed var(--border)", color: "var(--text-secondary)" }}
+      >
+        <span className="font-bold uppercase tracking-wider" style={{ color: "var(--blue-main)" }}>
+          RoutePay vs. banco tradicional
+        </span>
+        <span>⚡ Liquidación en segundos, no 3–5 días hábiles de SWIFT</span>
+        <span>💸 Comisión 0.5%, no $30–50 fijos por transferencia internacional</span>
+        <span>🔒 Custodia verificable on-chain, no fe ciega en intermediarios</span>
+        <span>↩️ Reembolso automático si la carga no llega — sin trámites ni reclamos</span>
+      </div>
+
       {/* ─── Acciones de Fondeo ──────────────────────── */}
-      {orderStatus === "none" ? (
+      {orderStatus === "pending" ? null : orderStatus === "none" ? (
         <div className="flex flex-col gap-2.5 mt-1">
           <button
             onClick={onOpenPollarModal}
