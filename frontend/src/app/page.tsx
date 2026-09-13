@@ -78,7 +78,7 @@ export default function RoutePayApp() {
   const [frightAmount, setFrightAmount] = useState("2500");
   const [manifestId, setManifestId] = useState("MIC-DTA-2026-AR-BO-0911");
   const [carrierAddress, setCarrierAddress] = useState(
-    address || "0x71C8F794B325261EC9dB43bAf6e5a0D6C11b2E42"
+    address || "0x71c8f794b325261eC9db43BAF6E5a0D6c11B2e42"
   );
 
   // Modals
@@ -112,9 +112,16 @@ export default function RoutePayApp() {
 
   // ─── Handlers ─────────────────────────────────────────────────────
   const handleFundOrder = async (method: "pollar" | "direct") => {
+    // The Pollar QR payment (BOB ➔ USDC) already succeeded at this point — show
+    // the order as sent/pending while the on-chain confirmation is still in
+    // flight, instead of jumping straight to "funded" before it's real.
+    setOrderStatus("pending");
+    setIsPollarModalOpen(false);
+
     const res = await createAndFundOrder({ carrier: carrierAddress, amountUsd: numAmount, manifestId, durationDays: 7 });
 
     if (!res.success) {
+      setOrderStatus("none");
       showToast(
         language === "es"
           ? `No se pudo bloquear el pago: ${errorMessage || "transacción rechazada o fallida"}`
@@ -128,7 +135,6 @@ export default function RoutePayApp() {
       setCurrentOrderId(BigInt(res.orderId));
     }
     setOrderStatus("funded");
-    setIsPollarModalOpen(false);
     const hash = res.hash || "0x9f3e...881a";
     if (method === "pollar") {
       showToast(language === "es" ? "Pago QR Pollar procesado. $2,500 USDC custodiados en Avalanche." : "Pollar QR processed. $2,500 USDC locked on Avalanche.", "success");
@@ -321,11 +327,11 @@ export default function RoutePayApp() {
           <div className="flex items-center gap-1.5">
             <span
               className="w-2.5 h-2.5 rounded-full transition-all"
-              style={stepDot(orderStatus !== "none", false, false, false)}
+              style={stepDot(orderStatus !== "none" && orderStatus !== "pending", false, false, false)}
             />
             <span
               className="font-semibold"
-              style={{ color: orderStatus !== "none" ? "var(--green-main)" : "var(--text-muted)" }}
+              style={{ color: orderStatus !== "none" && orderStatus !== "pending" ? "var(--green-main)" : "var(--text-muted)" }}
             >
               {t.lifecycle.step1}
             </span>
