@@ -26,8 +26,11 @@ export default function TruckTransitModal({
 
   const displayTitle = title || t.truckModal.title;
 
-  // Determine active tramo
-  const currentTramo = progress < 40 ? 1 : progress < 85 ? 2 : 3;
+  // Determine active tramo and active waypoints
+  const currentTramo = progress < 35 ? 1 : progress < 75 ? 2 : 3;
+  const isAricaActive = progress < 35;
+  const isTamboActive = progress >= 35 && progress < 75;
+  const isSantaCruzActive = progress >= 75;
 
   // Live Telemetry Simulation
   const speed = progress > 0 && progress < 100 ? (progress < 20 || progress > 80 ? 65 : 88) : 0;
@@ -45,7 +48,7 @@ export default function TruckTransitModal({
       return;
     }
 
-    // Eased velocity progression: 0% to 100% in ~3.2 seconds
+    // Smooth velocity progression: 0% to 100% in ~8.5 seconds (slower & cinematic)
     const interval = setInterval(() => {
       setProgress((prev) => {
         if (prev >= 100) {
@@ -53,7 +56,7 @@ export default function TruckTransitModal({
           setIsCompleted(true);
           return 100;
         }
-        const delta = prev < 15 ? 1.6 : prev > 85 ? 1.6 : 2.4;
+        const delta = prev < 15 ? 0.4 : prev > 85 ? 0.4 : 0.6;
         return Math.min(prev + delta, 100);
       });
     }, 50);
@@ -87,7 +90,7 @@ export default function TruckTransitModal({
         </div>
 
         {/* DYNAMIC ACTIVE TRAMO HUD CARD */}
-        <div className="w-full bg-[#0F172A] rounded-2xl p-3 mb-2.5 border border-white/10 shadow-lg text-left transition-all">
+        <div className="w-full bg-[#0F172A] rounded-2xl p-3 mb-2 border border-white/10 shadow-lg text-left transition-all">
           <div className="flex items-center justify-between mb-1">
             <span className="text-[10px] font-mono uppercase tracking-widest text-blue-300 font-black flex items-center gap-1.5">
               <span className="w-2 h-2 rounded-full bg-[#0A58CA] animate-pulse"></span>
@@ -97,12 +100,12 @@ export default function TruckTransitModal({
             </span>
 
             <span
-              className={`text-[9px] font-mono px-2 py-0.5 rounded-full font-bold uppercase ${
+              className={`text-[9px] font-mono px-2 py-0.5 rounded-full font-bold uppercase transition-all ${
                 currentTramo === 1
-                  ? "bg-[#0A58CA]/25 text-blue-300 border border-[#0A58CA]/40"
+                  ? "bg-[#0A58CA]/25 text-sky-300 border border-[#0A58CA]/40 shadow-sm shadow-[#0A58CA]/30 scale-105"
                   : currentTramo === 2
-                  ? "bg-[#E84142]/25 text-[#E84142] border border-[#E84142]/40"
-                  : "bg-[#10B981]/25 text-[#10B981] border border-[#10B981]/40"
+                  ? "bg-[#E84142]/25 text-[#E84142] border border-[#E84142]/40 shadow-sm shadow-[#E84142]/30 scale-105"
+                  : "bg-[#10B981]/25 text-[#10B981] border border-[#10B981]/40 shadow-sm shadow-[#10B981]/30 scale-105"
               }`}
             >
               {currentTramo === 1 && (language === "es" ? "Salida" : "Departure")}
@@ -124,44 +127,147 @@ export default function TruckTransitModal({
           </div>
         </div>
 
-        {/* WAYPOINT STEPPER BAR WITH ACTIVE NODE PULSE */}
-        <div className="w-full flex items-center justify-between px-2 mb-2.5 text-[10px] font-mono">
-          <div className="flex flex-col items-start">
-            <span className={`font-black flex items-center gap-1 ${currentTramo >= 1 ? "text-blue-300" : "text-slate-500"}`}>
-              <span className={`w-2.5 h-2.5 rounded-full ${currentTramo >= 1 ? "bg-[#0A58CA] shadow-md shadow-[#0A58CA]" : "bg-slate-700"} ${currentTramo === 1 ? "animate-pulse" : ""}`}></span>
+        {/* WAYPOINT STEPPER BAR WITH DYNAMIC ELEVATION & GLOW ANIMATION */}
+        <div className="w-full flex items-center justify-between px-3 py-2 mb-2 bg-[#0F172A]/70 rounded-2xl border border-white/10 text-[10px] font-mono shadow-inner">
+          {/* Waypoint 1: Arica */}
+          <div
+            className={`flex flex-col items-start transition-all duration-500 ease-out transform ${
+              isAricaActive
+                ? "-translate-y-2 scale-110 z-10"
+                : "translate-y-0 scale-95 opacity-75"
+            }`}
+          >
+            <span
+              className={`font-black flex items-center gap-1.5 transition-colors duration-300 ${
+                isAricaActive
+                  ? "text-sky-300 drop-shadow-[0_0_8px_rgba(56,189,248,0.9)]"
+                  : progress >= 35
+                  ? "text-sky-400"
+                  : "text-slate-500"
+              }`}
+            >
+              <span
+                className={`w-3 h-3 rounded-full flex items-center justify-center transition-all ${
+                  isAricaActive
+                    ? "bg-[#0A58CA] ring-4 ring-[#0A58CA]/40 shadow-lg shadow-[#0A58CA]"
+                    : progress >= 35
+                    ? "bg-[#0A58CA]"
+                    : "bg-slate-700"
+                }`}
+              >
+                {progress >= 35 ? (
+                  <span className="text-[8px] text-white font-bold">✓</span>
+                ) : (
+                  <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse"></span>
+                )}
+              </span>
               {t.truckModal.arica}
             </span>
-            <span className="text-[9px] text-slate-500 pl-3.5">Km 0 · 15m</span>
+            <span
+              className={`text-[9px] pl-4.5 transition-colors ${
+                isAricaActive ? "text-slate-100 font-bold" : "text-slate-500"
+              }`}
+            >
+              Km 0 · 15m
+            </span>
           </div>
 
-          <div className="flex-1 h-[2.5px] mx-2 bg-slate-800 relative rounded-full overflow-hidden">
+          {/* Progress Connector Line 1 */}
+          <div className="flex-1 h-[3px] mx-2 bg-slate-800 relative rounded-full overflow-hidden">
             <div
-              className="h-full bg-gradient-to-r from-[#0A58CA] to-[#E84142] transition-all duration-150"
-              style={{ width: `${Math.min(progress * 2.5, 100)}%` }}
+              className="h-full bg-gradient-to-r from-[#0A58CA] to-[#E84142] transition-all duration-300"
+              style={{ width: `${Math.min(progress * 2.85, 100)}%` }}
             ></div>
           </div>
 
-          <div className="flex flex-col items-center">
-            <span className={`font-black flex items-center gap-1 ${currentTramo >= 2 ? "text-[#E84142]" : "text-slate-500"}`}>
-              <span className={`w-2.5 h-2.5 rounded-full ${currentTramo >= 2 ? "bg-[#E84142] shadow-md shadow-[#E84142]" : "bg-slate-700"} ${currentTramo === 2 ? "animate-pulse" : ""}`}></span>
+          {/* Waypoint 2: Tambo Quemado */}
+          <div
+            className={`flex flex-col items-center transition-all duration-500 ease-out transform ${
+              isTamboActive
+                ? "-translate-y-2 scale-110 z-10"
+                : "translate-y-0 scale-95 opacity-75"
+            }`}
+          >
+            <span
+              className={`font-black flex items-center gap-1.5 transition-colors duration-300 ${
+                isTamboActive
+                  ? "text-[#E84142] drop-shadow-[0_0_10px_rgba(232,65,66,0.95)]"
+                  : progress >= 75
+                  ? "text-[#E84142]"
+                  : "text-slate-500"
+              }`}
+            >
+              <span
+                className={`w-3 h-3 rounded-full flex items-center justify-center transition-all ${
+                  isTamboActive
+                    ? "bg-[#E84142] ring-4 ring-[#E84142]/40 shadow-lg shadow-[#E84142]"
+                    : progress >= 75
+                    ? "bg-[#E84142]"
+                    : "bg-slate-700"
+                }`}
+              >
+                {progress >= 75 ? (
+                  <span className="text-[8px] text-white font-bold">✓</span>
+                ) : isTamboActive ? (
+                  <span className="w-1.5 h-1.5 rounded-full bg-white animate-ping"></span>
+                ) : null}
+              </span>
               {t.truckModal.tambo}
             </span>
-            <span className="text-[9px] text-slate-500">Km 480 · 4,680m</span>
+            <span
+              className={`text-[9px] transition-colors ${
+                isTamboActive ? "text-slate-100 font-bold" : "text-slate-500"
+              }`}
+            >
+              Km 480 · 4,680m
+            </span>
           </div>
 
-          <div className="flex-1 h-[2.5px] mx-2 bg-slate-800 relative rounded-full overflow-hidden">
+          {/* Progress Connector Line 2 */}
+          <div className="flex-1 h-[3px] mx-2 bg-slate-800 relative rounded-full overflow-hidden">
             <div
-              className="h-full bg-gradient-to-r from-[#E84142] to-[#10B981] transition-all duration-150"
-              style={{ width: `${Math.max(0, Math.min((progress - 40) * 2.2, 100))}%` }}
+              className="h-full bg-gradient-to-r from-[#E84142] to-[#10B981] transition-all duration-300"
+              style={{ width: `${Math.max(0, Math.min((progress - 35) * 2.5, 100))}%` }}
             ></div>
           </div>
 
-          <div className="flex flex-col items-end">
-            <span className={`font-black flex items-center gap-1 ${currentTramo >= 3 ? "text-[#10B981]" : "text-slate-500"}`}>
-              <span className={`w-2.5 h-2.5 rounded-full ${currentTramo >= 3 ? "bg-[#10B981] shadow-md shadow-[#10B981]" : "bg-slate-700"} ${currentTramo === 3 ? "animate-pulse" : ""}`}></span>
+          {/* Waypoint 3: Santa Cruz */}
+          <div
+            className={`flex flex-col items-end transition-all duration-500 ease-out transform ${
+              isSantaCruzActive
+                ? "-translate-y-2 scale-110 z-10"
+                : "translate-y-0 scale-95 opacity-75"
+            }`}
+          >
+            <span
+              className={`font-black flex items-center gap-1.5 transition-colors duration-300 ${
+                isSantaCruzActive
+                  ? "text-[#10B981] drop-shadow-[0_0_10px_rgba(16,185,129,0.95)]"
+                  : "text-slate-500"
+              }`}
+            >
+              <span
+                className={`w-3 h-3 rounded-full flex items-center justify-center transition-all ${
+                  isSantaCruzActive
+                    ? "bg-[#10B981] ring-4 ring-[#10B981]/40 shadow-lg shadow-[#10B981]"
+                    : "bg-slate-700"
+                }`}
+              >
+                {isCompleted ? (
+                  <span className="text-[8px] text-white font-bold">✓</span>
+                ) : isSantaCruzActive ? (
+                  <span className="w-1.5 h-1.5 rounded-full bg-white animate-ping"></span>
+                ) : null}
+              </span>
               {t.truckModal.santaCruz}
             </span>
-            <span className="text-[9px] text-slate-500 pr-3.5">Km 1,200 · 416m</span>
+            <span
+              className={`text-[9px] pr-4.5 transition-colors ${
+                isSantaCruzActive ? "text-slate-100 font-bold" : "text-slate-500"
+              }`}
+            >
+              Km 1,200 · 416m
+            </span>
           </div>
         </div>
 
@@ -225,13 +331,20 @@ export default function TruckTransitModal({
               </div>
             )}
 
-            {/* Heavy Freight Cyber-Truck SVG with Custom Color Accents */}
+            {/* Heavy Freight Cyber-Truck SVG with Custom Color Accents & Floating Location Badge */}
             <div
-              className={`relative z-20 flex items-end transition-all duration-300 ${!isCompleted ? "truck-bouncing" : ""}`}
+              className={`relative z-20 flex flex-col items-center transition-all duration-300 ${!isCompleted ? "truck-bouncing" : ""}`}
               style={{
                 left: `${Math.min(progress * 0.68, 66)}%`,
               }}
             >
+              {/* Floating Active Tramo Badge directly above truck */}
+              <div className="-mb-1 px-2.5 py-0.5 rounded-full bg-[#0F172A]/90 border border-white/20 text-[9px] font-mono font-black shadow-xl backdrop-blur-sm whitespace-nowrap animate-pulse transition-all">
+                {progress < 35 && <span className="text-sky-300">🇨🇱 Arica (Salida)</span>}
+                {progress >= 35 && progress < 75 && <span className="text-[#E84142]">🏔️ Tambo (4,680m)</span>}
+                {progress >= 75 && <span className="text-[#10B981]">🇧🇴 Santa Cruz (Destino)</span>}
+              </div>
+
               <svg width="135" height="68" viewBox="0 0 135 68" fill="none" xmlns="http://www.w3.org/2000/svg">
                 {/* Dual Headlight Beams */}
                 <polygon points="120,44 190,26 190,64 120,52" fill="url(#headlightBeamGradient)" className="headlight-glow" />
