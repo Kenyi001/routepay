@@ -67,6 +67,21 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin }) => {
   const isNameValid = name.trim().length >= 2;
   const canSubmit = Boolean(selected && isNameValid);
 
+  const isMobileNoWallet =
+    !isConnected &&
+    typeof navigator !== "undefined" &&
+    /Android|iPhone|iPad|iPod/i.test(navigator.userAgent) &&
+    typeof window !== "undefined" &&
+    !("ethereum" in window);
+
+  // No regular mobile browser injects window.ethereum — only a wallet app's
+  // own built-in browser does. This deep-links straight into MetaMask's
+  // in-app browser, which reloads the same page with a real provider.
+  const metamaskDeepLink =
+    typeof window !== "undefined"
+      ? `https://metamask.app.link/dapp/${window.location.host}${window.location.pathname}`
+      : "#";
+
   const handleContinue = () => {
     setAttemptedSubmit(true);
     if (!selected || !isNameValid) return;
@@ -236,6 +251,16 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin }) => {
               </svg>
               {walletError}
             </p>
+          )}
+
+          {isMobileNoWallet && walletError && (
+            <a
+              href={metamaskDeepLink}
+              className="rp-btn-primary w-full text-sm py-3 flex items-center justify-center gap-2"
+              style={{ background: "linear-gradient(135deg, #F6851B 0%, #E2761B 100%)" }}
+            >
+              🦊 {isEs ? "Abrir en MetaMask →" : "Open in MetaMask →"}
+            </a>
           )}
 
           {isConnected && (
