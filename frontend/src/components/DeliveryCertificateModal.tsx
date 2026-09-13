@@ -62,7 +62,7 @@ export default function DeliveryCertificateModal({
         <div className="w-full bg-slate-950/80 border border-white/10 rounded-2xl p-4 flex flex-col gap-2.5 text-left text-xs font-mono my-3 shadow-inner">
           <div className="flex justify-between items-center text-[11px] pb-1.5 border-b border-white/5">
             <span className="text-slate-400">{language === "es" ? "Corredor:" : "Corridor:"}</span>
-            <span className="text-white font-bold">🇨🇱 Arica ➔ 🇧🇴 Santa Cruz</span>
+            <span className="text-white font-bold">Arica (CL) ➔ Santa Cruz (BO)</span>
           </div>
 
           <div className="flex justify-between items-center text-[11px] pb-1.5 border-b border-white/5">

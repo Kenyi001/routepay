@@ -37,7 +37,9 @@ export const PollarOnrampModal: React.FC<PollarOnrampModalProps> = ({
         {/* Header */}
         <div className="flex items-center justify-between border-b border-white/10 pb-3">
           <div className="flex items-center gap-2">
-            <span className="text-lg">⚡</span>
+            <svg className="w-5 h-5 text-emerald-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
+            </svg>
             <div>
               <h3 className="font-extrabold text-sm text-white">Pollar On-Ramp QR</h3>
               <p className="text-[10px] text-[#10B981] font-mono">Pago Simple QR en Bolivianos (BOB)</p>
