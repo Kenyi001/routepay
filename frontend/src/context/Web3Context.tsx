@@ -75,7 +75,14 @@ export function Web3Provider({ children }: { children: ReactNode }) {
   const connect = useCallback(async () => {
     const ethereum = getEthereum();
     if (!ethereum) {
-      setError("No Web3 wallet found. Please install Core Wallet or MetaMask.");
+      // A regular mobile browser (Edge, Chrome, Safari) never injects
+      // window.ethereum — only a wallet app's own built-in browser does.
+      const isMobile = typeof navigator !== "undefined" && /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+      setError(
+        isMobile
+          ? "No wallet detected in this browser. Open this page from inside the MetaMask or Core Wallet app's built-in browser to connect."
+          : "No Web3 wallet found. Please install Core Wallet or MetaMask."
+      );
       return;
     }
 
