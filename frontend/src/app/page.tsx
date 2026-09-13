@@ -74,9 +74,9 @@ export default function RoutePayApp() {
   // Form state
   const [frightAmount, setFrightAmount] = useState("2500");
   const [manifestId, setManifestId] = useState("MIC-DTA-2026-AR-BO-0911");
-  const [carrierAddress, setCarrierAddress] = useState(
-    address || "0x71C8F794B325261EC9dB43bAf6e5a0D6C11b2E42"
-  );
+  // Default to the connected wallet address if available; otherwise empty so the
+  // user supplies a valid EIP-55 checksummed carrier address explicitly.
+  const [carrierAddress, setCarrierAddress] = useState(address || "");
 
   // Modals
   const [isTruckModalOpen, setIsTruckModalOpen] = useState(false);
