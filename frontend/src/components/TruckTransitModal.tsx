@@ -32,7 +32,7 @@ export default function TruckTransitModal({
   const currentTramo = progress < 40 ? 1 : progress < 85 ? 2 : 3;
 
   // Live Telemetry Simulation
-  const speed = progress > 0 && progress < 100 ? 84 : 0;
+  const speed = progress > 0 && progress < 100 ? (progress < 20 || progress > 80 ? 65 : 88) : 0;
   const altitude =
     progress < 30
       ? 15 // Arica sea level
@@ -47,7 +47,7 @@ export default function TruckTransitModal({
       return;
     }
 
-    // Smooth progress animation: 0% to 100% in ~3.2 seconds
+    // Eased velocity progression: 0% to 100% in ~3.2 seconds
     const interval = setInterval(() => {
       setProgress((prev) => {
         if (prev >= 100) {
@@ -55,9 +55,10 @@ export default function TruckTransitModal({
           setIsCompleted(true);
           return 100;
         }
-        return prev + 2;
+        const delta = prev < 15 ? 1.6 : prev > 85 ? 1.6 : 2.4;
+        return Math.min(prev + delta, 100);
       });
-    }, 60);
+    }, 50);
 
     return () => clearInterval(interval);
   }, [isOpen]);
@@ -154,8 +155,8 @@ export default function TruckTransitModal({
           </div>
         </div>
 
-        {/* WAYPOINT STEPPER BAR */}
-        <div className="w-full flex items-center justify-between px-2 mb-2 text-[10px] font-mono">
+        {/* WAYPOINT STEPPER BAR WITH ACTIVE NODE PULSE */}
+        <div className="w-full flex items-center justify-between px-2 mb-2.5 text-[10px] font-mono">
           <div className="flex flex-col items-start">
             <span className={`font-bold flex items-center gap-1 ${currentTramo >= 1 ? "text-[var(--blue-main)]" : "text-slate-400"}`}>
               <span className={`w-2 h-2 rounded-full ${currentTramo >= 1 ? "bg-[var(--blue-main)]" : "bg-slate-300"}`}></span>
@@ -236,9 +237,22 @@ export default function TruckTransitModal({
               </svg>
             </div>
 
+            {/* Dust Particles trailing behind wheels */}
+            {!isCompleted && (
+              <div
+                className="absolute bottom-3.5 z-10 pointer-events-none dust-particles"
+                style={{
+                  left: `${Math.min(progress * 0.68, 65)}%`,
+                }}
+              >
+                <div className="w-2.5 h-2.5 rounded-full bg-slate-400/40 blur-xs"></div>
+                <div className="w-3.5 h-3.5 rounded-full bg-slate-300/30 blur-xs -ml-2"></div>
+              </div>
+            )}
+
             {/* Heavy Freight Truck SVG with Brand RoutePay Styling */}
             <div
-              className="relative z-20 flex items-end transition-all duration-300 truck-bouncing"
+              className={`relative z-20 flex items-end transition-all duration-300 ${!isCompleted ? "truck-bouncing" : ""}`}
               style={{
                 left: `${Math.min(progress * 0.68, 66)}%`,
               }}
@@ -292,18 +306,66 @@ export default function TruckTransitModal({
                 <rect x="87" y="12" width="2" height="12" fill="#94A3B8" />
                 <rect x="87" y="10" width="3" height="2" fill="#CBD5E1" />
 
-                {/* Wheels */}
-                <circle cx="16" cy="53" r="7" fill="#1E293B" stroke="#64748B" strokeWidth="2" />
-                <circle cx="16" cy="53" r="3" fill="#94A3B8" />
+                {/* WHEELS with Animated Hubcap Illusion */}
+                {/* Back Trailer Wheel 1 */}
+                <g transform="translate(16, 53)">
+                  <circle cx="0" cy="0" r="7" fill="#020617" stroke="#6B7280" strokeWidth="2.5" />
+                  <g className={!isCompleted ? "wheel-spinning" : ""}>
+                    <line x1="-5" y1="0" x2="5" y2="0" stroke="#E84142" strokeWidth="1.5" />
+                    <line x1="0" y1="-5" x2="0" y2="5" stroke="#E84142" strokeWidth="1.5" />
+                  </g>
+                  <circle cx="0" cy="0" r="2" fill="#FFFFFF" />
+                </g>
 
-                <circle cx="34" cy="53" r="7" fill="#1E293B" stroke="#64748B" strokeWidth="2" />
-                <circle cx="34" cy="53" r="3" fill="#94A3B8" />
+                {/* Back Trailer Wheel 2 */}
+                <g transform="translate(34, 53)">
+                  <circle cx="0" cy="0" r="7" fill="#020617" stroke="#6B7280" strokeWidth="2.5" />
+                  <g className={!isCompleted ? "wheel-spinning" : ""}>
+                    <line x1="-5" y1="0" x2="5" y2="0" stroke="#E84142" strokeWidth="1.5" />
+                    <line x1="0" y1="-5" x2="0" y2="5" stroke="#E84142" strokeWidth="1.5" />
+                  </g>
+                  <circle cx="0" cy="0" r="2" fill="#FFFFFF" />
+                </g>
 
-                <circle cx="82" cy="53" r="7" fill="#1E293B" stroke="#64748B" strokeWidth="2" />
-                <circle cx="82" cy="53" r="3" fill="#0A51B2" />
+                {/* Tractor Intermediate Wheel */}
+                <g transform="translate(82, 53)">
+                  <circle cx="0" cy="0" r="7" fill="#020617" stroke="#6B7280" strokeWidth="2.5" />
+                  <g className={!isCompleted ? "wheel-spinning" : ""}>
+                    <line x1="-5" y1="0" x2="5" y2="0" stroke="#0A58CA" strokeWidth="1.5" />
+                    <line x1="0" y1="-5" x2="0" y2="5" stroke="#0A58CA" strokeWidth="1.5" />
+                  </g>
+                  <circle cx="0" cy="0" r="2" fill="#FFFFFF" />
+                </g>
 
-                <circle cx="106" cy="53" r="7" fill="#1E293B" stroke="#64748B" strokeWidth="2" />
-                <circle cx="106" cy="53" r="3" fill="#0A51B2" />
+                {/* Front Steer Wheel */}
+                <g transform="translate(106, 53)">
+                  <circle cx="0" cy="0" r="7" fill="#020617" stroke="#6B7280" strokeWidth="2.5" />
+                  <g className={!isCompleted ? "wheel-spinning" : ""}>
+                    <line x1="-5" y1="0" x2="5" y2="0" stroke="#E84142" strokeWidth="1.5" />
+                    <line x1="0" y1="-5" x2="0" y2="5" stroke="#E84142" strokeWidth="1.5" />
+                  </g>
+                  <circle cx="0" cy="0" r="2" fill="#FFFFFF" />
+                </g>
+
+                {/* Gradients */}
+                <defs>
+                  <linearGradient id="headlightBeamGradient" x1="120" y1="48" x2="190" y2="44" gradientUnits="userSpaceOnUse">
+                    <stop stopColor="#38BDF8" stopOpacity="0.75" />
+                    <stop offset="0.6" stopColor="#38BDF8" stopOpacity="0.3" />
+                    <stop offset="1" stopColor="#38BDF8" stopOpacity="0" />
+                  </linearGradient>
+
+                  <linearGradient id="containerGradient" x1="2" y1="10" x2="84" y2="48" gradientUnits="userSpaceOnUse">
+                    <stop stopColor="#0A58CA" />
+                    <stop offset="0.6" stopColor="#073B8A" />
+                    <stop offset="1" stopColor="#0F172A" />
+                  </linearGradient>
+
+                  <linearGradient id="cabinGradient" x1="86" y1="24" x2="114" y2="50" gradientUnits="userSpaceOnUse">
+                    <stop stopColor="#1F2937" />
+                    <stop offset="1" stopColor="#0F172A" />
+                  </linearGradient>
+                </defs>
               </svg>
             </div>
           </div>
