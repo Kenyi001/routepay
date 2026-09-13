@@ -114,10 +114,10 @@ export default function RoutePayApp() {
     setIsPollarModalOpen(false);
     const hash = res.hash || "0x9f3e...881a";
     if (method === "pollar") {
-      showToast(language === "es" ? "✓ Pago QR Pollar procesado. $2,500 USDC custodiados en Avalanche." : "✓ Pollar QR processed. $2,500 USDC locked on Avalanche.", "success");
+      showToast(language === "es" ? "Pago QR Pollar procesado. $2,500 USDC custodiados en Avalanche." : "Pollar QR processed. $2,500 USDC locked on Avalanche.", "success");
       addLog("createAndFundOrder() [Pollar BOB]", `$${frightAmount} USDC locked via Pollar QR (MIC/DTA registered)`, hash);
     } else {
-      showToast(language === "es" ? "✓ Fondos bloqueados en el contrato de custodia." : "✓ Funds locked in escrow contract.", "success");
+      showToast(language === "es" ? "Fondos bloqueados en el contrato de custodia." : "Funds locked in escrow contract.", "success");
       addLog("createAndFundOrder() [Direct USDC]", `$${frightAmount} USDC locked in TradeEscrow vault (MIC/DTA registered)`, hash);
     }
   };
@@ -127,7 +127,7 @@ export default function RoutePayApp() {
     const res = await startTransit(BigInt(1));
     setOrderStatus("in_transit");
     const hash = res.hash || "0x2c4e...119d";
-    showToast(language === "es" ? "🚚 Salida de Puerto confirmada. Tránsito iniciado." : "🚚 Port departure confirmed. Transit started.", "info");
+    showToast(language === "es" ? "Salida de Puerto confirmada. Tránsito iniciado." : "Port departure confirmed. Transit started.", "info");
     addLog("startTransit()", "Carrier dispatched from Arica port towards Tambo Quemado", hash);
   };
 
@@ -141,7 +141,7 @@ export default function RoutePayApp() {
     const res = await settleWithTangemTap(BigInt(1));
     setOrderStatus("settled");
     const hash = res.hash || "0x7a1b...55f2";
-    showToast(language === "es" ? "🎉 Entrega verificada por Tangem NFC. Liquidación ejecutada en Avalanche." : "🎉 Delivery verified by Tangem NFC. Settlement executed on Avalanche.", "success");
+    showToast(language === "es" ? "Entrega verificada por Tangem NFC. Liquidación ejecutada en Avalanche." : "Delivery verified by Tangem NFC. Settlement executed on Avalanche.", "success");
     addLog("settleWithTangemTap()", `Tangem NFC EAL6+ verified. Payout: $${carrierPayout} USDC`, hash);
   };
 
@@ -152,8 +152,8 @@ export default function RoutePayApp() {
     const hash = res.hash || "0x8f4c...33b1";
     showToast(
       language === "es"
-        ? "⚠️ Plazo vencido. Fondos ($2,500 USDC) reembolsados íntegramente al Importador."
-        : "⚠️ Timeout expired. Funds ($2,500 USDC) refunded to Importer.",
+        ? "Plazo vencido. Fondos ($2,500 USDC) reembolsados íntegramente al Importador."
+        : "Timeout expired. Funds ($2,500 USDC) refunded to Importer.",
       "error"
     );
     addLog("refundOnTimeout() [Demora Excesiva]", `Escrow refunded 100% ($${frightAmount} USDC) to Importer on Avalanche`, hash);
@@ -162,7 +162,7 @@ export default function RoutePayApp() {
   const handleOpenDispute = () => {
     setOrderStatus("disputed");
     const h = "0x" + Array.from({ length: 64 }, () => Math.floor(Math.random() * 16).toString(16)).join("");
-    showToast(language === "es" ? "⚠️ Retención aduanera reportada en Tambo Quemado." : "⚠️ Customs retention reported at Tambo Quemado.", "error");
+    showToast(language === "es" ? "Retención aduanera reportada en Tambo Quemado." : "Customs retention reported at Tambo Quemado.", "error");
     addLog("openDispute()", "Border retention reported at Tambo Quemado customs checkpoint", h);
   };
 
@@ -240,14 +240,15 @@ export default function RoutePayApp() {
           </div>
           {role === "importer" && (
             <span className="font-bold flex items-center gap-1.5" style={{ color: "var(--green-main)" }}>
-              🟢 Pollar (BOB ➔ USDC)
+              <span className="w-2 h-2 rounded-full bg-[var(--green-main)]"></span>
+              Pollar (BOB ➔ USDC)
               <span style={{ color: "var(--border)" }}>·</span>
               <span style={{ color: "var(--blue-bright)" }}>Avalanche</span>
             </span>
           )}
           {role === "carrier" && (
             <span className="font-bold flex items-center gap-1.5" style={{ color: "var(--blue-main)" }}>
-              🏔️ MIC/DTA
+              MIC/DTA
               <span style={{ color: "var(--border)" }}>·</span>
               <span style={{ color: "var(--green-main)" }}>TradeEscrow · Tangem</span>
             </span>
@@ -520,7 +521,7 @@ export default function RoutePayApp() {
 
               {/* Why Tangem */}
               <p className="text-[10px] font-mono" style={{ color: "var(--text-muted)" }}>
-                ❓ ¿Por qué Tangem NFC? · Hardware EAL6+ · Imposible falsificar sin la tarjeta física
+                ¿Por qué Tangem NFC? · Hardware EAL6+ · Imposible falsificar sin la tarjeta física
               </p>
             </div>
 

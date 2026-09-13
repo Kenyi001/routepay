@@ -102,7 +102,7 @@ export const TangemTapModal: React.FC<TangemTapModalProps> = ({
 
       <div>
         <h2 className="font-black text-xl" style={{ color: "var(--navy)" }}>
-          {tapSuccess ? "¡Entrega Verificada! 🎉" : "Acerca la Tarjeta Tangem NFC"}
+          {tapSuccess ? "¡Entrega Verificada!" : "Acerca la Tarjeta Tangem NFC"}
         </h2>
         <p className="text-xs mt-1 max-w-xs" style={{ color: "var(--text-secondary)" }}>
           {tapSuccess
@@ -268,12 +268,12 @@ export const TangemTapModal: React.FC<TangemTapModalProps> = ({
             className="text-xs flex justify-between font-mono pt-2"
             style={{ borderTop: "1px solid var(--border)", color: "var(--text-secondary)" }}
           >
-            <span>🚚 Pago Transportista (99.5%):</span>
+            <span>Pago Transportista (99.5%):</span>
             <span className="font-extrabold" style={{ color: "var(--navy)" }}>${carrierPayout} USDC</span>
           </div>
 
           <div className="text-xs flex justify-between font-mono" style={{ color: "var(--text-muted)" }}>
-            <span>⚡ Comisión RoutePay (0.5%):</span>
+            <span>Comisión RoutePay (0.5%):</span>
             <span className="font-bold">${protocolFee} USDC</span>
           </div>
 
@@ -288,9 +288,15 @@ export const TangemTapModal: React.FC<TangemTapModalProps> = ({
           {onOpenCertificate && (
             <button
               onClick={onOpenCertificate}
-              className="rp-btn-green w-full mt-2 py-2.5 text-xs"
+              className="rp-btn-green w-full mt-2 py-2.5 text-xs flex items-center justify-center gap-1.5"
             >
-              📜 Ver Certificado de Liquidación
+              <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                <polyline points="14 2 14 8 20 8"></polyline>
+                <line x1="16" y1="13" x2="8" y2="13"></line>
+                <line x1="16" y1="17" x2="8" y2="17"></line>
+              </svg>
+              Ver Certificado de Liquidación
             </button>
           )}
         </div>
@@ -331,7 +337,7 @@ export const TangemTapModal: React.FC<TangemTapModalProps> = ({
           className="text-[11px] flex items-center gap-1.5 font-mono underline decoration-dotted"
           style={{ color: "var(--text-muted)" }}
         >
-          ❓ ¿Por qué Tangem NFC? {showTooltip ? "▲" : "▼"}
+          ¿Por qué Tangem NFC? {showTooltip ? "▲" : "▼"}
         </button>
         {showTooltip && (
           <div
@@ -342,7 +348,7 @@ export const TangemTapModal: React.FC<TangemTapModalProps> = ({
               color: "var(--text-secondary)",
             }}
           >
-            💡 <strong style={{ color: "var(--navy)" }}>Seguridad Anti-Fraude:</strong> Bloquea la liberación
+            <strong style={{ color: "var(--navy)" }}>Seguridad Anti-Fraude:</strong> Bloquea la liberación
             del pago en blockchain hasta la recepción física confirmada por la clave privada del chip
             Tangem (hardware). Imposible de falsificar sin la tarjeta física.
           </div>

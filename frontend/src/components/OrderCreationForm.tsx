@@ -183,11 +183,11 @@ export const OrderCreationForm: React.FC<OrderCreationFormProps> = ({
             </span>
           </div>
 
-          <div className="flex items-center gap-2 font-bold py-0.5" style={{ color: "var(--navy)" }}>
-            <span className="text-base">🇨🇱</span>
+          <div className="flex items-center gap-2 font-bold py-0.5 text-xs font-mono" style={{ color: "var(--navy)" }}>
+            <span className="px-1.5 py-0.5 rounded bg-blue-100 text-[var(--blue-main)] font-bold text-[10px]">CL</span>
             <span className="truncate">{origin}</span>
             <span style={{ color: "var(--blue-light)" }}>➔</span>
-            <span className="text-base">🇧🇴</span>
+            <span className="px-1.5 py-0.5 rounded bg-emerald-100 text-[var(--green-main)] font-bold text-[10px]">BO</span>
             <span className="truncate">{destination}</span>
           </div>
 
@@ -273,14 +273,22 @@ export const OrderCreationForm: React.FC<OrderCreationFormProps> = ({
             onClick={onOpenPollarModal}
             className="rp-btn-green w-full py-3.5 text-xs flex items-center justify-center gap-2"
           >
-            <span>📱</span> Cargar Fondos con QR BOB (Pollar On-Ramp)
+            <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <rect x="5" y="2" width="14" height="20" rx="2" ry="2"></rect>
+              <line x1="12" y1="18" x2="12.01" y2="18"></line>
+            </svg>
+            Cargar Fondos con QR BOB (Pollar On-Ramp)
           </button>
 
           <button
             onClick={onCreateOrderDirect}
-            className="rp-btn-primary w-full py-3.5 text-xs flex items-center justify-center gap-1.5"
+            className="rp-btn-primary w-full py-3.5 text-xs flex items-center justify-center gap-2"
           >
-            <span>🔒</span> Bloquear ${frightAmount} USDC en Custodia Smart Contract
+            <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+              <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+            </svg>
+            Bloquear ${frightAmount} USDC en Custodia Smart Contract
           </button>
         </div>
       ) : (

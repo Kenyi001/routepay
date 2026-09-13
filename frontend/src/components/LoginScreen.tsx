@@ -106,7 +106,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin }) => {
               background: "var(--surface)",
             }}
           >
-            {language === "es" ? "🇪🇸 ES" : "🇺🇸 EN"}
+            {language.toUpperCase()}
           </button>
         </div>
 
@@ -217,7 +217,10 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin }) => {
               className="rp-btn-primary w-full text-sm py-3.5 flex items-center justify-center gap-2"
               style={{ opacity: isConnecting ? 0.6 : 1 }}
             >
-              <span>🔗</span>
+              <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path>
+                <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path>
+              </svg>
               {isConnecting
                 ? (isEs ? "Conectando Billetera…" : "Connecting Wallet…")
                 : (isEs ? "Conectar Billetera Web3" : "Connect Web3 Wallet")}

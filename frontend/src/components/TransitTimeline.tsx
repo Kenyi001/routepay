@@ -442,7 +442,11 @@ export const TransitTimeline: React.FC<TransitTimelineProps> = ({
             border: "1.5px solid rgba(8, 161, 110, 0.35)",
           }}
         >
-          <div className="text-2xl">🎉</div>
+          <div className="w-12 h-12 mx-auto rounded-full bg-emerald-100 text-[var(--green-main)] flex items-center justify-center">
+            <svg className="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="20 6 9 17 4 12"></polyline>
+            </svg>
+          </div>
           <p className="text-sm font-extrabold" style={{ color: "var(--green-main)" }}>
             ¡Flete Cobrado con Éxito!
           </p>
@@ -456,9 +460,15 @@ export const TransitTimeline: React.FC<TransitTimelineProps> = ({
           {onOpenCertificate && (
             <button
               onClick={onOpenCertificate}
-              className="rp-btn-green w-full py-2.5 text-xs mt-1"
+              className="rp-btn-green w-full py-2.5 text-xs mt-1 flex items-center justify-center gap-1.5"
             >
-              📜 Ver Certificado Criptográfico de Entrega
+              <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                <polyline points="14 2 14 8 20 8"></polyline>
+                <line x1="16" y1="13" x2="8" y2="13"></line>
+                <line x1="16" y1="17" x2="8" y2="17"></line>
+              </svg>
+              Ver Certificado Criptográfico de Entrega
             </button>
           )}
 
