@@ -57,7 +57,7 @@ const ROLE_CARDS: {
 ];
 
 export const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin }) => {
-  const { isConnected, isConnecting, connect, address } = useWeb3();
+  const { isConnected, isConnecting, connect, address, error: walletError } = useWeb3();
   const { language, toggleLanguage } = useLanguage();
   const [selected, setSelected] = useState<LoginRole | null>(null);
   const [name, setName] = useState("");
@@ -225,7 +225,20 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin }) => {
                 ? (isEs ? "Conectando Billetera…" : "Connecting Wallet…")
                 : (isEs ? "Conectar Billetera Web3" : "Connect Web3 Wallet")}
             </button>
-          ) : (
+          ) : null}
+
+          {!isConnected && walletError && (
+            <p className="text-[11px] font-semibold text-red-500 flex items-start gap-1.5 leading-relaxed">
+              <svg className="w-3.5 h-3.5 mt-0.5 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="12" cy="12" r="10"></circle>
+                <line x1="12" y1="8" x2="12" y2="12"></line>
+                <line x1="12" y1="16" x2="12.01" y2="16"></line>
+              </svg>
+              {walletError}
+            </p>
+          )}
+
+          {isConnected && (
             <div
               className="p-2.5 rounded-xl flex items-center justify-between text-xs font-mono"
               style={{
