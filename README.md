@@ -12,11 +12,11 @@ Built for **ETH Bolivia Buildathon 2026** (Cochabamba, 11–13 sep 2026).
 | **GitHub (this repo, public)** | https://github.com/RoutePay-Protocol/routepay |
 | **Live demo** | https://frontend-mu-bay-zvc6ih2zcs.vercel.app |
 | **Network** | Avalanche Fuji Testnet — Chain ID `43113` |
-| **TradeEscrow contract** | [`0x33cA337680366d337931a6f22226214d09594011`](https://testnet.snowtrace.io/address/0x33cA337680366d337931a6f22226214d09594011) — [source verified ✅ (Sourcify, exact match)](https://repo.sourcify.dev/contracts/full_match/43113/0x33cA337680366d337931a6f22226214d09594011/) |
-| **ERC-2771 Forwarder** | [`0x33E5Adf857F02C5e56174c99b610C86e04610a6D`](https://testnet.snowtrace.io/address/0x33E5Adf857F02C5e56174c99b610C86e04610a6D) — [source verified ✅ (Sourcify, exact match)](https://repo.sourcify.dev/contracts/full_match/43113/0x33E5Adf857F02C5e56174c99b610C86e04610a6D/) |
+| **TradeEscrow contract** | [`0x33cA337680366d337931a6f22226214d09594011`](https://testnet.snowtrace.io/address/0x33cA337680366d337931a6f22226214d09594011#code) — **source code verified ✅** |
+| **ERC-2771 Forwarder** | [`0x33E5Adf857F02C5e56174c99b610C86e04610a6D`](https://testnet.snowtrace.io/address/0x33E5Adf857F02C5e56174c99b610C86e04610a6D#code) — **source code verified ✅** |
 | **USDC (Circle, testnet)** | [`0x5425890298aed601595a70AB815c96711a31Bc65`](https://testnet.snowtrace.io/address/0x5425890298aed601595a70AB815c96711a31Bc65) |
 
-> Both contracts are verified on [Sourcify](https://sourcify.dev) as exact bytecode matches — anyone can read the real deployed Solidity source, not just the bytecode. The deployed `TradeEscrow` matches commit [`db7076d`](https://github.com/RoutePay-Protocol/routepay/commit/db7076d), one commit before this repo's current `InvalidStatusForOperation` error-naming fix — that later fix (renaming a misleading error, no behavior change) was never redeployed to this address.
+> Both contracts have their real Solidity source verified and public — open the `#code` tab on either link above to read it, not just the bytecode. Also cross-verified as an exact bytecode match on [Sourcify](https://repo.sourcify.dev/contracts/full_match/43113/0x33cA337680366d337931a6f22226214d09594011/). The deployed `TradeEscrow` matches commit [`db7076d`](https://github.com/RoutePay-Protocol/routepay/commit/db7076d), one commit before this repo's current `InvalidStatusForOperation` error-naming fix — that later fix (renaming a misleading error, no behavior change) was never redeployed to this address.
 
 ## What is this
 
