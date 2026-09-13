@@ -16,7 +16,6 @@ export default function PollarQrModal({
   onClose,
   onPaymentSuccess,
   amountUsd = "2500",
-  manifestId = "MIC-DTA-2026-AR-BO-0911",
 }: PollarQrModalProps) {
   const { language } = useLanguage();
   const [isProcessing, setIsProcessing] = useState(false);
@@ -52,7 +51,7 @@ export default function PollarQrModal({
         <div className="w-full flex justify-between items-center mb-3">
           <div className="flex items-center gap-2 text-left">
             <div
-              className="w-8 h-8 rounded-xl flex items-center justify-center font-black text-xs text-white"
+              className="w-8 h-8 rounded-xl flex items-center justify-center font-black text-xs text-white shadow-md shadow-[#08A16E]/30"
               style={{ background: "linear-gradient(135deg, #08A16E 0%, #1ABD7C 100%)" }}
             >
               P
@@ -74,11 +73,14 @@ export default function PollarQrModal({
           </button>
         </div>
 
-        {/* QR Code Container */}
+        {/* QR Code Container with High-Tech Laser Sweep */}
         <div
-          className="relative my-2 p-3.5 bg-white rounded-2xl shadow-sm border-2 flex flex-col items-center justify-center"
-          style={{ borderColor: "rgba(8, 161, 110, 0.3)" }}
+          className="relative my-2 p-3.5 bg-white rounded-2xl shadow-sm border-2 flex flex-col items-center justify-center overflow-hidden"
+          style={{ borderColor: "rgba(8, 161, 110, 0.4)" }}
         >
+          {/* Laser Scanner Bar */}
+          {!isPaid && <div className="qr-laser-scanner"></div>}
+
           <svg width="150" height="150" viewBox="0 0 150 150" fill="none" xmlns="http://www.w3.org/2000/svg">
             <rect width="150" height="150" fill="white" />
             <rect x="10" y="10" width="36" height="36" rx="6" fill="#012053" />
@@ -141,7 +143,7 @@ export default function PollarQrModal({
 
         {/* Currency Conversion Summary */}
         <div
-          className="w-full rounded-2xl p-3.5 flex flex-col gap-1.5 text-left text-xs font-mono my-2"
+          className="w-full rounded-2xl p-3.5 flex flex-col gap-1.5 text-left text-xs font-mono my-2 shadow-inner"
           style={{ background: "var(--surface-2)", border: "1px solid var(--border)" }}
         >
           <div className="flex justify-between items-center">
@@ -183,7 +185,7 @@ export default function PollarQrModal({
         {/* Action Button */}
         {isPaid ? (
           <div
-            className="w-full py-2.5 rounded-xl font-bold text-xs flex items-center justify-center gap-1.5 animate-success-pop"
+            className="w-full py-3 rounded-xl font-bold text-xs flex items-center justify-center gap-1.5 animate-success-pop shadow-md"
             style={{ background: "rgba(8, 161, 110, 0.15)", border: "1px solid rgba(8, 161, 110, 0.4)", color: "var(--green-main)" }}
           >
             <span>✓</span> {language === "es" ? "¡Pago QR Confirmado en Pollar!" : "QR Payment Confirmed on Pollar!"}
@@ -193,7 +195,7 @@ export default function PollarQrModal({
             onClick={handleSimulatePayment}
             disabled={isProcessing}
             type="button"
-            className="rp-btn-green w-full py-3 text-xs flex items-center justify-center gap-2"
+            className="rp-btn-green w-full py-3.5 text-xs flex items-center justify-center gap-2 shadow-lg"
           >
             {isProcessing ? (
               <>
@@ -202,7 +204,10 @@ export default function PollarQrModal({
               </>
             ) : (
               <>
-                <span>📱</span>
+                <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <rect x="5" y="2" width="14" height="20" rx="2" ry="2"></rect>
+                  <line x1="12" y1="18" x2="12.01" y2="18"></line>
+                </svg>
                 <span>
                   {language === "es"
                     ? "Simular Escaneo y Pago QR (Banca Móvil)"

@@ -72,7 +72,7 @@ export const Header: React.FC<HeaderProps> = ({ userName, userRole, onLogout }) 
         {/* Language toggle */}
         <button
           onClick={toggleLanguage}
-          className="flex items-center gap-1 px-2 py-1.5 rounded-lg text-xs font-bold transition-colors"
+          className="flex items-center gap-1.5 px-2 py-1 rounded-lg text-[11px] font-bold transition-colors font-mono"
           style={{
             border: "1.5px solid var(--border)",
             color: "var(--blue-main)",
@@ -80,7 +80,12 @@ export const Header: React.FC<HeaderProps> = ({ userName, userRole, onLogout }) 
           }}
           title={isEs ? "Change language" : "Cambiar idioma"}
         >
-          {language === "es" ? "🇪🇸" : "🇺🇸"}
+          <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <circle cx="12" cy="12" r="10"></circle>
+            <line x1="2" y1="12" x2="22" y2="12"></line>
+            <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>
+          </svg>
+          {language.toUpperCase()}
         </button>
 
         {/* Network chip — only shows when connected */}

@@ -6,6 +6,7 @@ import { useLanguage } from "@/context/LanguageContext";
 interface TruckTransitModalProps {
   isOpen: boolean;
   onClose: () => void;
+  onConfirmWithTangem?: () => void;
   title?: string;
   orderId?: string;
   manifestId?: string;
@@ -15,22 +16,23 @@ interface TruckTransitModalProps {
 export default function TruckTransitModal({
   isOpen,
   onClose,
+  onConfirmWithTangem,
   title,
-  orderId = "1",
+  orderId = "101",
   manifestId = "MIC-DTA-2026-AR-BO-0911",
   amount = "2,487.50",
 }: TruckTransitModalProps) {
-  const { t, language } = useLanguage();
+  const { language } = useLanguage();
   const [progress, setProgress] = useState(0);
   const [isCompleted, setIsCompleted] = useState(false);
 
-  const displayTitle = title || t.truckModal.title;
+  const displayTitle = title || (language === "es" ? "Tramo en Ruta y Telemetría" : "Route Leg & Live Telemetry");
 
   // Determine active tramo
   const currentTramo = progress < 40 ? 1 : progress < 85 ? 2 : 3;
 
   // Live Telemetry Simulation
-  const speed = progress > 0 && progress < 100 ? 84 : 0;
+  const speed = progress > 0 && progress < 100 ? (progress < 20 || progress > 80 ? 65 : 88) : 0;
   const altitude =
     progress < 30
       ? 15 // Arica sea level
@@ -45,7 +47,7 @@ export default function TruckTransitModal({
       return;
     }
 
-    // Smooth progress animation: 0% to 100% in ~3.2 seconds
+    // Eased velocity progression: 0% to 100% in ~3.2 seconds
     const interval = setInterval(() => {
       setProgress((prev) => {
         if (prev >= 100) {
@@ -53,55 +55,85 @@ export default function TruckTransitModal({
           setIsCompleted(true);
           return 100;
         }
-        return prev + 2;
+        const delta = prev < 15 ? 1.6 : prev > 85 ? 1.6 : 2.4;
+        return Math.min(prev + delta, 100);
       });
-    }, 60);
+    }, 50);
 
     return () => clearInterval(interval);
   }, [isOpen]);
 
   if (!isOpen) return null;
 
+  const handleProceedToTangem = () => {
+    if (onConfirmWithTangem) {
+      onConfirmWithTangem();
+    } else {
+      onClose();
+    }
+  };
+
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md animate-fadeIn">
-      <div className="w-full max-w-lg bg-[#1F2937] border border-white/15 rounded-3xl p-5 sm:p-6 shadow-2xl shadow-[#0A58CA]/25 flex flex-col items-center text-center relative overflow-hidden">
-        {/* Ambient glow halos */}
-        <div className="absolute -top-24 -left-24 w-56 h-56 bg-[#0A58CA]/20 rounded-full blur-3xl pointer-events-none"></div>
-        <div className="absolute -bottom-24 -right-24 w-56 h-56 bg-[#E84142]/20 rounded-full blur-3xl pointer-events-none"></div>
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/65 backdrop-blur-md animate-fadeIn">
+      <div className="w-full max-w-lg bg-white border border-slate-200 rounded-3xl p-5 sm:p-6 shadow-2xl flex flex-col items-center text-center relative overflow-hidden">
 
         {/* Modal Header */}
-        <div className="w-full flex justify-between items-center mb-3 border-b border-white/10 pb-3">
+        <div className="w-full flex justify-between items-center mb-3 border-b border-slate-100 pb-3">
           <div className="flex items-center gap-2.5 text-left">
-            <div className="w-3 h-3 rounded-full bg-[#E84142] animate-ping"></div>
+            <div className="w-3 h-3 rounded-full bg-[var(--blue-main)] animate-ping"></div>
             <div>
-              <p className="text-[10px] font-mono text-[#0A58CA] uppercase tracking-wider font-black">
-                {t.truckModal.corridor}
+              <p className="text-[10px] font-mono text-[var(--blue-main)] uppercase tracking-wider font-bold">
+                {language === "es" ? "Corredor Bioceánico Pacífico — Atlántico" : "Bioceanic Corridor Pacific — Atlantic"}
               </p>
-              <h3 className="text-base font-black text-white tracking-tight">{displayTitle}</h3>
+              <h3 className="text-base font-extrabold text-[var(--navy)] tracking-tight">{displayTitle}</h3>
             </div>
           </div>
-          <span className="text-[11px] font-mono px-2.5 py-1 rounded-full bg-[#0F172A] text-slate-300 border border-white/10 font-bold">
-            {t.truckModal.order} #{orderId}
+          <span className="text-[11px] font-mono px-2.5 py-1 rounded-full bg-slate-100 text-[var(--navy)] border border-slate-200 font-bold">
+            Orden #{orderId}
           </span>
         </div>
 
         {/* DYNAMIC ACTIVE TRAMO HUD CARD */}
-        <div className="w-full bg-[#0F172A] rounded-2xl p-3 mb-2.5 border border-white/10 shadow-lg text-left transition-all">
+        <div className="w-full bg-[#F8FAFC] rounded-2xl p-3.5 mb-2.5 border border-slate-200 shadow-sm text-left transition-all">
           <div className="flex items-center justify-between mb-1">
-            <span className="text-[10px] font-mono uppercase tracking-widest text-blue-300 font-black flex items-center gap-1.5">
-              <span className="w-2 h-2 rounded-full bg-[#0A58CA] animate-pulse"></span>
-              {currentTramo === 1 && (language === "es" ? "📍 Tramo 1: Despacho en Puerto (Chile)" : "📍 Leg 1: Port Dispatch (Chile)")}
-              {currentTramo === 2 && (language === "es" ? "🏔️ Tramo 2: Aduana Fronteriza (Tambo Quemado)" : "🏔️ Leg 2: Customs Border (Tambo Quemado)")}
-              {currentTramo === 3 && (language === "es" ? "📦 Tramo 3: Arribo a Almacén Central (Santa Cruz)" : "📦 Leg 3: Central Warehouse Arrival (Santa Cruz)")}
+            <span className="text-[10px] font-mono uppercase tracking-widest text-[var(--navy)] font-black flex items-center gap-1.5">
+              <span className="w-2 h-2 rounded-full bg-[var(--blue-main)] animate-pulse"></span>
+              {currentTramo === 1 && (
+                <span className="flex items-center gap-1">
+                  <svg className="w-3.5 h-3.5 text-blue-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"></polygon>
+                  </svg>
+                  {language === "es" ? "Tramo 1: Despacho en Puerto (Chile)" : "Leg 1: Port Dispatch (Chile)"}
+                </span>
+              )}
+              {currentTramo === 2 && (
+                <span className="flex items-center gap-1">
+                  <svg className="w-3.5 h-3.5 text-amber-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <polygon points="12 2 2 22 22 22 12 2"></polygon>
+                  </svg>
+                  {language === "es" ? "Tramo 2: Aduana Fronteriza (Tambo Quemado)" : "Leg 2: Customs Border (Tambo Quemado)"}
+                </span>
+              )}
+              {currentTramo === 3 && (
+                <span className="flex items-center gap-1">
+                  <svg className="w-3.5 h-3.5 text-emerald-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
+                    <polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline>
+                    <line x1="12" y1="22.08" x2="12" y2="12"></line>
+                  </svg>
+                  {language === "es" ? "Tramo 3: Arribo a Almacén Central (Santa Cruz)" : "Leg 3: Central Warehouse Arrival (Santa Cruz)"}
+                </span>
+              )}
             </span>
 
             <span
               className={`text-[9px] font-mono px-2 py-0.5 rounded-full font-bold uppercase ${
                 currentTramo === 1
-                  ? "bg-[#0A58CA]/25 text-blue-300 border border-[#0A58CA]/40"
+                  ? "bg-blue-100 text-blue-800 border border-blue-200"
                   : currentTramo === 2
-                  ? "bg-[#E84142]/25 text-[#E84142] border border-[#E84142]/40"
-                  : "bg-[#10B981]/25 text-[#10B981] border border-[#10B981]/40"
+                  ? "bg-amber-100 text-amber-800 border border-amber-200"
+                  : "bg-emerald-100 text-emerald-800 border border-emerald-200"
               }`}
             >
               {currentTramo === 1 && (language === "es" ? "Salida" : "Departure")}
@@ -110,88 +142,87 @@ export default function TruckTransitModal({
             </span>
           </div>
 
-          <p className="text-xs font-semibold text-white">
+          <p className="text-xs font-semibold text-slate-700">
             {currentTramo === 1 && (language === "es" ? "Carga pesada inspeccionada y saliendo del Puerto de Arica." : "Heavy freight inspected and leaving Port of Arica.")}
             {currentTramo === 2 && (language === "es" ? "Revisión de precintos y manifiesto MIC/DTA en paso cordillerano." : "Seal and manifest MIC/DTA inspection at mountain pass.")}
             {currentTramo === 3 && (language === "es" ? "Llegada a almacén central. Listo para Tap de confirmación Tangem NFC." : "Arrived at central warehouse. Ready for Tangem NFC tap confirmation.")}
           </p>
 
-          <div className="flex items-center justify-between text-[10px] font-mono text-slate-400 mt-2 pt-2 border-t border-white/5">
-            <span>Velocidad: <strong className="text-white">{speed} km/h</strong></span>
-            <span>Altitud: <strong className="text-white">{altitude} msnm</strong></span>
-            <span>Distancia: <strong className="text-[#0A58CA]">{Math.round((progress / 100) * 1200)} / 1,200 km</strong></span>
+          <div className="flex items-center justify-between text-[10px] font-mono text-slate-500 mt-2.5 pt-2 border-t border-slate-200">
+            <span>Velocidad: <strong className="text-[var(--navy)]">{speed} km/h</strong></span>
+            <span>Altitud: <strong className="text-[var(--navy)]">{altitude} msnm</strong></span>
+            <span>Distancia: <strong className="text-[var(--blue-main)]">{Math.round((progress / 100) * 1200)} / 1,200 km</strong></span>
           </div>
         </div>
 
-        {/* WAYPOINT STEPPER BAR */}
-        <div className="w-full flex items-center justify-between px-2 mb-2 text-[10px] font-mono">
+        {/* WAYPOINT STEPPER BAR WITH ACTIVE NODE PULSE */}
+        <div className="w-full flex items-center justify-between px-2 mb-2.5 text-[10px] font-mono">
           <div className="flex flex-col items-start">
-            <span className={`font-black flex items-center gap-1 ${currentTramo >= 1 ? "text-blue-300" : "text-slate-500"}`}>
-              <span className={`w-2 h-2 rounded-full ${currentTramo >= 1 ? "bg-[#0A58CA]" : "bg-slate-700"}`}></span>
-              {t.truckModal.arica}
+            <span className={`font-bold flex items-center gap-1 ${currentTramo >= 1 ? "text-[var(--blue-main)]" : "text-slate-400"}`}>
+              <span className={`w-2 h-2 rounded-full ${currentTramo >= 1 ? "bg-[var(--blue-main)]" : "bg-slate-300"}`}></span>
+              Arica (Puerto)
             </span>
-            <span className="text-[9px] text-slate-500 pl-3">Km 0 · 15m</span>
+            <span className="text-[9px] text-slate-400 pl-3">Km 0 · 15m</span>
           </div>
 
-          <div className="flex-1 h-[2px] mx-2 bg-gradient-to-r from-[#0A58CA] via-slate-700 to-[#10B981] relative">
+          <div className="flex-1 h-[2px] mx-2 bg-slate-200 relative">
             <div
-              className="absolute top-1/2 -translate-y-1/2 w-2 h-2 rounded-full bg-[#E84142] shadow-sm shadow-[#E84142]"
+              className="absolute top-1/2 -translate-y-1/2 w-2.5 h-2.5 rounded-full bg-[var(--blue-main)] shadow-sm"
               style={{ left: `${progress}%` }}
             ></div>
           </div>
 
           <div className="flex flex-col items-center">
-            <span className={`font-black flex items-center gap-1 ${currentTramo >= 2 ? "text-[#E84142]" : "text-slate-500"}`}>
-              <span className={`w-2 h-2 rounded-full ${currentTramo >= 2 ? "bg-[#E84142]" : "bg-slate-700"}`}></span>
-              {t.truckModal.tambo}
+            <span className={`font-bold flex items-center gap-1 ${currentTramo >= 2 ? "text-amber-700" : "text-slate-400"}`}>
+              <span className={`w-2 h-2 rounded-full ${currentTramo >= 2 ? "bg-amber-500" : "bg-slate-300"}`}></span>
+              Tambo Quemado
             </span>
-            <span className="text-[9px] text-slate-500">Km 480 · 4,680m</span>
+            <span className="text-[9px] text-slate-400">Km 480 · 4,680m</span>
           </div>
 
-          <div className="flex-1 h-[2px] mx-2 bg-gradient-to-r from-[#E84142] to-[#10B981]"></div>
+          <div className="flex-1 h-[2px] mx-2 bg-slate-200"></div>
 
           <div className="flex flex-col items-end">
-            <span className={`font-black flex items-center gap-1 ${currentTramo >= 3 ? "text-[#10B981]" : "text-slate-500"}`}>
-              <span className={`w-2 h-2 rounded-full ${currentTramo >= 3 ? "bg-[#10B981]" : "bg-slate-700"}`}></span>
-              {t.truckModal.santaCruz}
+            <span className={`font-bold flex items-center gap-1 ${currentTramo >= 3 ? "text-[var(--green-main)]" : "text-slate-400"}`}>
+              <span className={`w-2 h-2 rounded-full ${currentTramo >= 3 ? "bg-[var(--green-main)]" : "bg-slate-300"}`}></span>
+              Santa Cruz (Almacén)
             </span>
-            <span className="text-[9px] text-slate-500 pr-3">Km 1,200 · 416m</span>
+            <span className="text-[9px] text-slate-400 pr-3">Km 1,200 · 416m</span>
           </div>
         </div>
 
-        {/* SCENIC ROAD & CYBER-TRUCK CONTAINER */}
-        <div className="w-full relative h-48 bg-gradient-to-b from-[#0B0F19] via-[#0F172A] to-[#04060C] rounded-2xl border border-white/10 overflow-hidden flex flex-col justify-between p-3 my-1 shadow-2xl">
-          {/* Mountains silhouette backdrop */}
-          <div className="absolute top-2 left-0 right-0 h-28 opacity-45 pointer-events-none flex justify-between items-end px-1">
+        {/* ─── SCENIC ROAD & CYBER-TRUCK CONTAINER (ANIMACIONES EN BLANCO / MODO CLARO) ─── */}
+        <div className="w-full relative h-48 bg-gradient-to-b from-[#EBF3FF] via-[#F8FAFC] to-[#E2E8F0] rounded-2xl border border-slate-200 overflow-hidden flex flex-col justify-between p-3 my-1 shadow-inner">
+          {/* Daytime Mountains silhouette backdrop */}
+          <div className="absolute top-2 left-0 right-0 h-28 opacity-80 pointer-events-none flex justify-between items-end px-1">
             {/* Mountain 1 - Arica Volcanos */}
             <svg width="120" height="90" viewBox="0 0 120 90" fill="none" className="translate-y-2">
-              <polygon points="0,90 60,10 120,90" fill="#1E293B" />
-              <polygon points="45,30 60,10 75,30" fill="#94A3B8" opacity="0.6" />
+              <polygon points="0,90 60,15 120,90" fill="#94A3B8" />
+              <polygon points="45,35 60,15 75,35" fill="#FFFFFF" opacity="0.9" />
             </svg>
 
             {/* Mountain 2 - Sajama Peak (Bolivia 6,542m) */}
             <svg width="180" height="110" viewBox="0 0 180 110" fill="none" className="-mx-8 z-0">
-              <polygon points="0,110 90,5 180,110" fill="#0F172A" />
-              <polygon points="70,30 90,5 110,30" fill="#CBD5E1" opacity="0.8" />
+              <polygon points="0,110 90,8 180,110" fill="#64748B" />
+              <polygon points="70,35 90,8 110,35" fill="#FFFFFF" opacity="0.95" />
             </svg>
 
             {/* Mountain 3 - Cordillera Real */}
             <svg width="140" height="95" viewBox="0 0 140 95" fill="none" className="translate-y-1">
-              <polygon points="0,95 70,15 140,95" fill="#1E293B" />
-              <polygon points="55,35 70,15 85,35" fill="#94A3B8" opacity="0.5" />
+              <polygon points="0,95 70,20 140,95" fill="#94A3B8" />
+              <polygon points="55,40 70,20 85,40" fill="#FFFFFF" opacity="0.85" />
             </svg>
           </div>
 
-          {/* Stars & Night Sky Effect */}
-          <div className="absolute top-2 left-6 w-1 h-1 bg-white rounded-full opacity-60"></div>
-          <div className="absolute top-5 left-28 w-1.5 h-1.5 bg-blue-200 rounded-full opacity-80 animate-pulse"></div>
-          <div className="absolute top-3 right-20 w-1 h-1 bg-white rounded-full opacity-70"></div>
-          <div className="absolute top-8 right-36 w-1 h-1 bg-amber-100 rounded-full opacity-50"></div>
+          {/* Light Daytime clouds */}
+          <div className="absolute top-3 left-6 w-12 h-3 bg-white/70 rounded-full blur-[1px]"></div>
+          <div className="absolute top-6 left-32 w-16 h-4 bg-white/80 rounded-full blur-[1px]"></div>
+          <div className="absolute top-4 right-16 w-14 h-3 bg-white/75 rounded-full blur-[1px]"></div>
 
           {/* CYBER-TRUCK & ROAD SECTION */}
           <div className="relative w-full h-32 flex items-end pb-1 mt-auto">
             {/* The Road Surface */}
-            <div className="absolute bottom-1 left-0 right-0 h-11 bg-[#020617] border-t-2 border-slate-600 flex items-center overflow-hidden shadow-2xl">
+            <div className="absolute bottom-1 left-0 right-0 h-11 bg-[#334155] border-t-2 border-slate-400 flex items-center overflow-hidden shadow-md">
               {/* Moving road dashed line */}
               <svg className="w-full h-3" viewBox="0 0 400 12" preserveAspectRatio="none">
                 <line
@@ -206,87 +237,115 @@ export default function TruckTransitModal({
               </svg>
             </div>
 
-            {/* Heavy Freight Cyber-Truck SVG with Custom Color Accents */}
+            {/* Dust Particles trailing behind wheels */}
+            {!isCompleted && (
+              <div
+                className="absolute bottom-3.5 z-10 pointer-events-none dust-particles"
+                style={{
+                  left: `${Math.min(progress * 0.68, 65)}%`,
+                }}
+              >
+                <div className="w-2.5 h-2.5 rounded-full bg-slate-400/40 blur-xs"></div>
+                <div className="w-3.5 h-3.5 rounded-full bg-slate-300/30 blur-xs -ml-2"></div>
+              </div>
+            )}
+
+            {/* Heavy Freight Truck SVG with Brand RoutePay Styling */}
             <div
-              className="relative z-20 flex items-end transition-all duration-300 truck-bouncing"
+              className={`relative z-20 flex items-end transition-all duration-300 ${!isCompleted ? "truck-bouncing" : ""}`}
               style={{
                 left: `${Math.min(progress * 0.68, 66)}%`,
               }}
             >
               <svg width="135" height="68" viewBox="0 0 135 68" fill="none" xmlns="http://www.w3.org/2000/svg">
-                {/* Dual Headlight Beams */}
-                <polygon points="120,44 190,26 190,64 120,52" fill="url(#headlightBeamGradient)" className="headlight-glow" />
-
-                {/* Truck Container / Trailer with Electric Sapphire Frame */}
-                <rect x="2" y="10" width="82" height="40" rx="4" fill="url(#containerGradient)" stroke="#0A58CA" strokeWidth="2" />
-                <line x1="2" y1="22" x2="84" y2="22" stroke="#0A58CA" strokeWidth="1.5" opacity="0.6" />
-                <line x1="2" y1="36" x2="84" y2="36" stroke="#0A58CA" strokeWidth="1.5" opacity="0.6" />
+                {/* Truck Container / Trailer with White & Navy Styling */}
+                <rect x="2" y="10" width="82" height="40" rx="4" fill="#FFFFFF" stroke="#03409E" strokeWidth="2" />
+                <line x1="2" y1="22" x2="84" y2="22" stroke="#03409E" strokeWidth="1" opacity="0.4" />
+                <line x1="2" y1="36" x2="84" y2="36" stroke="#03409E" strokeWidth="1" opacity="0.4" />
 
                 {/* Vertical aerodynamic container ribs */}
-                <line x1="22" y1="10" x2="22" y2="50" stroke="#0F172A" strokeWidth="1" opacity="0.5" />
-                <line x1="42" y1="10" x2="42" y2="50" stroke="#0F172A" strokeWidth="1" opacity="0.5" />
-                <line x1="62" y1="10" x2="62" y2="50" stroke="#0F172A" strokeWidth="1" opacity="0.5" />
+                <line x1="22" y1="10" x2="22" y2="50" stroke="#CBD5E1" strokeWidth="1" />
+                <line x1="42" y1="10" x2="42" y2="50" stroke="#CBD5E1" strokeWidth="1" />
+                <line x1="62" y1="10" x2="62" y2="50" stroke="#CBD5E1" strokeWidth="1" />
 
                 {/* RoutePay Escrow Logo on Container */}
-                <rect x="8" y="16" width="68" height="22" rx="3" fill="#020617" stroke="#1E293B" strokeWidth="1" />
-                <text x="14" y="27" fill="#38BDF8" fontSize="7.5" fontFamily="monospace" fontWeight="900" letterSpacing="1">
+                <rect x="8" y="16" width="68" height="22" rx="3" fill="#012053" stroke="#03409E" strokeWidth="1" />
+                <text x="14" y="27" fill="#FFFFFF" fontSize="7.5" fontFamily="monospace" fontWeight="900" letterSpacing="1">
                   ROUTEPAY
                 </text>
-                <text x="14" y="34" fill="#E84142" fontSize="5.5" fontFamily="monospace" fontWeight="bold">
-                  AVALANCHE FUJI ESCROW
+                <text x="14" y="34" fill="#1ABD7C" fontSize="5.5" fontFamily="monospace" fontWeight="bold">
+                  AVALANCHE ESCROW
                 </text>
 
                 {/* Connecting Joint Hitch */}
-                <rect x="84" y="36" width="6" height="6" fill="#374151" />
+                <rect x="84" y="36" width="6" height="6" fill="#475569" />
 
                 {/* Cabin (Heavy Truck Semi Cab) */}
                 <path
                   d="M86 24 H104 L116 36 V52 H86 V24 Z"
-                  fill="url(#cabinGradient)"
-                  stroke="#E84142"
+                  fill="#03409E"
+                  stroke="#012053"
                   strokeWidth="2"
                 />
 
-                {/* Windshield with Night Reflection */}
-                <path d="M102 27 L112 37 H98 V27 H102 Z" fill="#38BDF8" opacity="0.85" />
+                {/* Windshield */}
+                <path d="M102 27 L112 37 H98 V27 H102 Z" fill="#93C5FD" opacity="0.9" />
 
                 {/* Cabin Door Window */}
-                <rect x="90" y="28" width="6" height="7" rx="1" fill="#020617" opacity="0.7" />
+                <rect x="90" y="28" width="6" height="7" rx="1" fill="#1E293B" opacity="0.8" />
 
-                {/* Aerodynamic Roof Spoiler */}
-                <path d="M86 24 L102 18 V24 H86 Z" fill="#E84142" opacity="0.9" />
+                {/* Roof Spoiler */}
+                <path d="M86 24 L102 18 V24 H86 Z" fill="#0A51B2" />
 
-                {/* Front Bumper & Crimson Grill */}
-                <rect x="114" y="44" width="7" height="8" rx="2" fill="#E84142" />
+                {/* Front Bumper & Grill */}
+                <rect x="114" y="44" width="7" height="8" rx="2" fill="#012053" />
                 <line x1="115" y1="46" x2="120" y2="46" stroke="#FFFFFF" strokeWidth="1" />
                 <line x1="115" y1="49" x2="120" y2="49" stroke="#FFFFFF" strokeWidth="1" />
 
-                {/* Twin Vertical Exhaust Chimney behind cab */}
-                <rect x="87" y="12" width="2" height="12" fill="#9CA3AF" />
-                <rect x="87" y="10" width="3" height="2" fill="#D1D5DB" />
+                {/* Exhaust Chimney */}
+                <rect x="87" y="12" width="2" height="12" fill="#94A3B8" />
+                <rect x="87" y="10" width="3" height="2" fill="#CBD5E1" />
 
                 {/* WHEELS with Animated Hubcap Illusion */}
                 {/* Back Trailer Wheel 1 */}
-                <circle cx="16" cy="53" r="7" fill="#020617" stroke="#6B7280" strokeWidth="2.5" />
-                <circle cx="16" cy="53" r="3" fill="#E84142" />
-                <line x1="13" y1="53" x2="19" y2="53" stroke="#FFFFFF" strokeWidth="1" />
-                <line x1="16" y1="50" x2="16" y2="56" stroke="#FFFFFF" strokeWidth="1" />
+                <g transform="translate(16, 53)">
+                  <circle cx="0" cy="0" r="7" fill="#020617" stroke="#6B7280" strokeWidth="2.5" />
+                  <g className={!isCompleted ? "wheel-spinning" : ""}>
+                    <line x1="-5" y1="0" x2="5" y2="0" stroke="#E84142" strokeWidth="1.5" />
+                    <line x1="0" y1="-5" x2="0" y2="5" stroke="#E84142" strokeWidth="1.5" />
+                  </g>
+                  <circle cx="0" cy="0" r="2" fill="#FFFFFF" />
+                </g>
 
                 {/* Back Trailer Wheel 2 */}
-                <circle cx="34" cy="53" r="7" fill="#020617" stroke="#6B7280" strokeWidth="2.5" />
-                <circle cx="34" cy="53" r="3" fill="#E84142" />
-                <line x1="31" y1="53" x2="37" y2="53" stroke="#FFFFFF" strokeWidth="1" />
-                <line x1="34" y1="50" x2="34" y2="56" stroke="#FFFFFF" strokeWidth="1" />
+                <g transform="translate(34, 53)">
+                  <circle cx="0" cy="0" r="7" fill="#020617" stroke="#6B7280" strokeWidth="2.5" />
+                  <g className={!isCompleted ? "wheel-spinning" : ""}>
+                    <line x1="-5" y1="0" x2="5" y2="0" stroke="#E84142" strokeWidth="1.5" />
+                    <line x1="0" y1="-5" x2="0" y2="5" stroke="#E84142" strokeWidth="1.5" />
+                  </g>
+                  <circle cx="0" cy="0" r="2" fill="#FFFFFF" />
+                </g>
 
                 {/* Tractor Intermediate Wheel */}
-                <circle cx="82" cy="53" r="7" fill="#020617" stroke="#6B7280" strokeWidth="2.5" />
-                <circle cx="82" cy="53" r="3" fill="#0A58CA" />
+                <g transform="translate(82, 53)">
+                  <circle cx="0" cy="0" r="7" fill="#020617" stroke="#6B7280" strokeWidth="2.5" />
+                  <g className={!isCompleted ? "wheel-spinning" : ""}>
+                    <line x1="-5" y1="0" x2="5" y2="0" stroke="#0A58CA" strokeWidth="1.5" />
+                    <line x1="0" y1="-5" x2="0" y2="5" stroke="#0A58CA" strokeWidth="1.5" />
+                  </g>
+                  <circle cx="0" cy="0" r="2" fill="#FFFFFF" />
+                </g>
 
                 {/* Front Steer Wheel */}
-                <circle cx="106" cy="53" r="7" fill="#020617" stroke="#6B7280" strokeWidth="2.5" />
-                <circle cx="106" cy="53" r="3" fill="#0A58CA" />
-                <line x1="103" y1="53" x2="109" y2="53" stroke="#FFFFFF" strokeWidth="1" />
-                <line x1="106" y1="50" x2="106" y2="56" stroke="#FFFFFF" strokeWidth="1" />
+                <g transform="translate(106, 53)">
+                  <circle cx="0" cy="0" r="7" fill="#020617" stroke="#6B7280" strokeWidth="2.5" />
+                  <g className={!isCompleted ? "wheel-spinning" : ""}>
+                    <line x1="-5" y1="0" x2="5" y2="0" stroke="#E84142" strokeWidth="1.5" />
+                    <line x1="0" y1="-5" x2="0" y2="5" stroke="#E84142" strokeWidth="1.5" />
+                  </g>
+                  <circle cx="0" cy="0" r="2" fill="#FFFFFF" />
+                </g>
 
                 {/* Gradients */}
                 <defs>
@@ -314,52 +373,83 @@ export default function TruckTransitModal({
 
         {/* PROGRESS BAR & PERCENTAGE */}
         <div className="w-full flex flex-col gap-1.5 my-2.5">
-          <div className="flex justify-between text-[11px] font-mono text-slate-200 font-medium">
-            <span>{isCompleted ? t.truckModal.completed : t.truckModal.inProgress}</span>
-            <span className="text-[#0A58CA] font-black">{Math.round(progress)}%</span>
+          <div className="flex justify-between text-[11px] font-mono text-slate-600 font-medium">
+            <span>{isCompleted ? (language === "es" ? "Tramo Completado ✓" : "Leg Completed ✓") : (language === "es" ? "Tránsito en progreso…" : "Transit in progress…")}</span>
+            <span className="text-[var(--blue-main)] font-black">{Math.round(progress)}%</span>
           </div>
-          <div className="w-full h-2.5 bg-[#0F172A] rounded-full overflow-hidden p-0.5 border border-white/10 shadow-inner">
+          <div className="w-full h-2.5 bg-slate-100 rounded-full overflow-hidden p-0.5 border border-slate-200 shadow-inner">
             <div
-              className="h-full bg-gradient-to-r from-[#0A58CA] via-[#E84142] to-[#10B981] rounded-full transition-all duration-150 shadow-md shadow-[#0A58CA]/40"
+              className="h-full bg-gradient-to-r from-[var(--blue-main)] via-[var(--blue-bright)] to-[var(--green-main)] rounded-full transition-all duration-150 shadow-sm"
               style={{ width: `${progress}%` }}
             ></div>
           </div>
         </div>
 
-        {/* DETAILS & SUCCESS CARD */}
+        {/* DETAILS & SUCCESS CARD (CON REDIRECCIONAMIENTO DIRECTO A TANGEM) */}
         {isCompleted ? (
-          <div className="w-full flex flex-col gap-3 p-4 bg-[#10B981]/15 border border-[#10B981]/40 rounded-2xl mt-1 text-left animate-success-pop shadow-xl">
-            <div className="flex items-center gap-2">
-              <div className="w-7 h-7 rounded-full bg-[#10B981]/20 text-[#10B981] flex items-center justify-center font-black text-base border border-[#10B981]/40 shadow-inner">
-                ✓
+          <div className="w-full flex flex-col gap-3 p-4 bg-emerald-50 border border-emerald-200 rounded-2xl mt-1 text-left animate-success-pop shadow-sm">
+            <div className="flex items-center gap-2.5">
+              <div className="w-8 h-8 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center font-black text-base border border-emerald-300">
+                <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="20 6 9 17 4 12"></polyline>
+                </svg>
               </div>
               <div>
-                <h4 className="font-extrabold text-sm text-[#10B981]">{t.truckModal.successTitle}</h4>
-                <p className="text-[10px] text-slate-300 font-mono">{t.truckModal.successDesc}</p>
+                <h4 className="font-extrabold text-sm text-emerald-800">
+                  {language === "es" ? "¡Arribo a Almacén Central Confirmado!" : "Central Warehouse Arrival Confirmed!"}
+                </h4>
+                <p className="text-[11px] text-emerald-700">
+                  {language === "es"
+                    ? "Carga lista para verificación física y liberación de fondos con tu tarjeta Tangem."
+                    : "Freight ready for physical verification and funds release with your Tangem card."}
+                </p>
               </div>
             </div>
 
-            <div className="bg-[#0F172A] p-3 rounded-xl border border-white/5 flex justify-between items-center font-mono text-xs shadow-inner">
-              <span className="text-slate-400">{t.truckModal.escrowLocked}</span>
-              <span className="font-black text-[#10B981] text-base">${amount} USDC</span>
+            <div className="bg-white p-3 rounded-xl border border-emerald-100 flex justify-between items-center font-mono text-xs shadow-sm">
+              <span className="text-slate-600">{language === "es" ? "Custodia en Smart Contract:" : "Locked Escrow:"}</span>
+              <span className="font-black text-emerald-700 text-base">${amount} USDC</span>
             </div>
 
-            <div className="flex justify-between items-center text-[10px] text-slate-400 font-mono pt-1">
-              <span>{t.truckModal.manifest} {manifestId}</span>
-              <span className="text-[#10B981] font-bold">{t.truckModal.verifiedFuji}</span>
+            <div className="flex justify-between items-center text-[10px] text-slate-500 font-mono pt-1">
+              <span>Manifiesto: {manifestId}</span>
+              <span className="text-emerald-700 font-bold">Avalanche Fuji Verificado</span>
             </div>
 
+            {/* BOTÓN PRINCIPAL CON REDIRECCIÓN DIRECTA A CONFIRMAR CON TANGEM */}
             <button
-              onClick={onClose}
-              className="w-full mt-1 py-3 rounded-xl bg-gradient-to-r from-[#10B981] to-[#059669] text-white font-black text-xs shadow-lg shadow-[#10B981]/30 hover:opacity-95 active:scale-98 transition-all"
+              onClick={handleProceedToTangem}
+              className="w-full mt-1 py-3.5 rounded-xl bg-gradient-to-r from-[var(--green-main)] to-[#067A53] text-white font-extrabold text-xs shadow-lg shadow-emerald-700/20 hover:opacity-95 active:scale-98 transition-all flex items-center justify-center gap-2"
             >
-              {t.truckModal.btnContinue}
+              <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <rect x="2" y="5" width="20" height="14" rx="2"></rect>
+                <line x1="2" y1="10" x2="22" y2="10"></line>
+              </svg>
+              Confirmar Pago con Tarjeta Tangem NFC
+              <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <line x1="5" y1="12" x2="19" y2="12"></line>
+                <polyline points="12 5 19 12 12 19"></polyline>
+              </svg>
             </button>
           </div>
         ) : (
-          <div className="w-full p-3 bg-[#0F172A] border border-white/5 rounded-xl mt-1 text-xs text-slate-300 flex items-center justify-center gap-2 font-mono shadow-inner">
-            <span className="w-2 h-2 rounded-full bg-[#0A58CA] animate-ping"></span>
-            {t.truckModal.registeringCoords}
+          <div className="w-full flex flex-col gap-2">
+            <div className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-600 flex items-center justify-center gap-2 font-mono">
+              <span className="w-2 h-2 rounded-full bg-[var(--blue-main)] animate-ping"></span>
+              {language === "es" ? "Registrando coordenadas de telemetría en tiempo real…" : "Registering live telemetry coordinates…"}
+            </div>
+
+            {/* Opción para ir directo a la tarjeta Tangem si el usuario no desea esperar */}
+            <button
+              type="button"
+              onClick={handleProceedToTangem}
+              className="py-2 text-[11px] font-semibold text-[var(--blue-main)] hover:underline flex items-center justify-center gap-1"
+            >
+              <span>Ir directo a Confirmación de Pago con Tarjeta Tangem</span>
+              <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="9 18 15 12 9 6"></polyline>
+              </svg>
+            </button>
           </div>
         )}
       </div>
