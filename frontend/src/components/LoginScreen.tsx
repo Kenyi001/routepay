@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { useWeb3 } from "@/context/Web3Context";
+import { useWeb3, WalletType } from "@/context/Web3Context";
 import { useLanguage } from "@/context/LanguageContext";
 
 export type LoginRole = "importer" | "carrier";
@@ -40,11 +40,12 @@ const ROLE_CARDS: {
 ];
 
 export const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin }) => {
-  const { isConnected, isConnecting, connect, address } = useWeb3();
+  const { isConnected, isConnecting, connect, address, error } = useWeb3();
   const { language, toggleLanguage } = useLanguage();
   const [selected, setSelected] = useState<LoginRole | null>(null);
   const [name, setName] = useState("");
   const [attemptedSubmit, setAttemptedSubmit] = useState(false);
+  const [showWalletChooser, setShowWalletChooser] = useState(false);
 
   const isEs = language === "es";
   const isNameValid = name.trim().length >= 2;
@@ -54,6 +55,11 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin }) => {
     setAttemptedSubmit(true);
     if (!selected || !isNameValid) return;
     onLogin(selected, name.trim());
+  };
+
+  const handleConnectWallet = (targetWallet: WalletType) => {
+    setShowWalletChooser(false);
+    connect(targetWallet);
   };
 
   return (
@@ -184,17 +190,46 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin }) => {
         {/* ─── Wallet + CTA ────────────────────────── */}
         <div className="flex flex-col gap-2">
           {!isConnected ? (
-            <button
-              onClick={connect}
-              disabled={isConnecting}
-              className="rp-btn-primary w-full text-sm py-3.5 flex items-center justify-center gap-2"
-              style={{ opacity: isConnecting ? 0.6 : 1 }}
-            >
-              <span>🔗</span>
-              {isConnecting
-                ? (isEs ? "Conectando Billetera…" : "Connecting Wallet…")
-                : (isEs ? "Conectar Billetera Web3" : "Connect Web3 Wallet")}
-            </button>
+            <div className="flex flex-col gap-2">
+              {!showWalletChooser ? (
+                <button
+                  onClick={() => handleConnectWallet("metamask")}
+                  disabled={isConnecting}
+                  className="rp-btn-primary w-full text-sm py-3.5 flex items-center justify-center gap-2"
+                  style={{ opacity: isConnecting ? 0.6 : 1 }}
+                >
+                  <span className="text-base">🦊</span>
+                  {isConnecting
+                    ? (isEs ? "Conectando Billetera…" : "Connecting Wallet…")
+                    : (isEs ? "Conectar con MetaMask" : "Connect with MetaMask")}
+                </button>
+              ) : null}
+
+              {/* Wallet options */}
+              <div className="grid grid-cols-2 gap-2">
+                <button
+                  onClick={() => handleConnectWallet("metamask")}
+                  disabled={isConnecting}
+                  className="p-2.5 rounded-xl border text-xs font-bold flex items-center justify-center gap-1.5 hover:bg-slate-50 transition-all"
+                  style={{ border: "1.5px solid var(--border)", color: "var(--navy)" }}
+                >
+                  <span>🦊</span> MetaMask
+                </button>
+
+                <button
+                  onClick={() => handleConnectWallet("core")}
+                  disabled={isConnecting}
+                  className="p-2.5 rounded-xl border text-xs font-bold flex items-center justify-center gap-1.5 hover:bg-slate-50 transition-all"
+                  style={{ border: "1.5px solid var(--border)", color: "var(--navy)" }}
+                >
+                  <span>🔺</span> Core Wallet
+                </button>
+              </div>
+
+              {error && (
+                <p className="text-[11px] text-red-500 font-mono text-center">{error}</p>
+              )}
+            </div>
           ) : (
             <div
               className="p-2.5 rounded-xl flex items-center justify-between text-xs font-mono"

@@ -3,13 +3,16 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, ReactNode } from "react";
 import { avalancheFuji } from "@/lib/web3/client";
 
+export type WalletType = "metamask" | "core" | "auto";
+
 interface Web3ContextType {
   address: string | null;
   chainId: number | null;
   isConnected: boolean;
   isConnecting: boolean;
+  connectedWallet: WalletType | null;
   error: string | null;
-  connect: () => Promise<void>;
+  connect: (walletType?: WalletType) => Promise<void>;
   disconnect: () => void;
   switchNetwork: () => Promise<void>;
 }
@@ -19,27 +22,81 @@ const Web3Context = createContext<Web3ContextType>({
   chainId: null,
   isConnected: false,
   isConnecting: false,
+  connectedWallet: null,
   error: null,
   connect: async () => {},
   disconnect: () => {},
   switchNetwork: async () => {},
 });
 
+/**
+ * Specifically finds the MetaMask provider when multiple wallets (Core, MetaMask, Phantom) are installed.
+ */
+function getMetaMaskProvider() {
+  if (typeof window === "undefined") return null;
+  const win = window as any;
+
+  // 1. Check window.ethereum.providers array (standard when multiple Web3 extensions are active)
+  if (win.ethereum?.providers?.length) {
+    const mmProvider = win.ethereum.providers.find(
+      (p: any) => p.isMetaMask && !p.isAvalanche
+    );
+    if (mmProvider) return mmProvider;
+  }
+
+  // 2. Direct check on window.ethereum if it's explicitly MetaMask and not Core
+  if (win.ethereum?.isMetaMask && !win.ethereum?.isAvalanche) {
+    return win.ethereum;
+  }
+
+  // 3. Fallback to window.ethereum
+  return win.ethereum || null;
+}
+
+/**
+ * Specifically finds the Core Wallet provider (Avalanche Native).
+ */
+function getCoreProvider() {
+  if (typeof window === "undefined") return null;
+  const win = window as any;
+
+  // 1. Dedicated Core Wallet provider object
+  if (win.avalanche) return win.avalanche;
+
+  // 2. Check window.ethereum.providers array
+  if (win.ethereum?.providers?.length) {
+    const coreProvider = win.ethereum.providers.find(
+      (p: any) => p.isAvalanche
+    );
+    if (coreProvider) return coreProvider;
+  }
+
+  // 3. Direct check on window.ethereum
+  if (win.ethereum?.isAvalanche) return win.ethereum;
+
+  return win.ethereum || null;
+}
+
 export function Web3Provider({ children }: { children: ReactNode }) {
   const [address, setAddress] = useState<string | null>(null);
   const [chainId, setChainId] = useState<number | null>(null);
   const [isConnecting, setIsConnecting] = useState(false);
+  const [connectedWallet, setConnectedWallet] = useState<WalletType | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  const getEthereum = () => {
-    if (typeof window !== "undefined" && "ethereum" in window) {
-      return (window as unknown as { ethereum: any }).ethereum;
+  const getProvider = (targetWallet: WalletType = "metamask") => {
+    if (targetWallet === "metamask") {
+      return getMetaMaskProvider() || getCoreProvider();
     }
-    return null;
+    if (targetWallet === "core") {
+      return getCoreProvider() || getMetaMaskProvider();
+    }
+    // Auto detection
+    return getMetaMaskProvider() || getCoreProvider();
   };
 
   const switchNetwork = useCallback(async () => {
-    const ethereum = getEthereum();
+    const ethereum = getProvider(connectedWallet || "metamask");
     if (!ethereum) return;
 
     try {
@@ -48,7 +105,6 @@ export function Web3Provider({ children }: { children: ReactNode }) {
         params: [{ chainId: `0x${avalancheFuji.id.toString(16)}` }],
       });
     } catch (switchError: any) {
-      // If network is not added to wallet (error code 4902)
       if (switchError.code === 4902) {
         try {
           await ethereum.request({
@@ -70,53 +126,83 @@ export function Web3Provider({ children }: { children: ReactNode }) {
         console.error("Error switching to Avalanche Fuji:", switchError);
       }
     }
-  }, []);
+  }, [connectedWallet]);
 
-  const connect = useCallback(async () => {
-    const ethereum = getEthereum();
-    if (!ethereum) {
-      setError("No Web3 wallet found. Please install Core Wallet or MetaMask.");
-      return;
-    }
+  const connect = useCallback(
+    async (preferredWallet: WalletType = "metamask") => {
+      const provider = getProvider(preferredWallet);
 
-    setIsConnecting(true);
-    setError(null);
-
-    try {
-      const accounts: string[] = await ethereum.request({
-        method: "eth_requestAccounts",
-      });
-
-      if (accounts && accounts.length > 0) {
-        setAddress(accounts[0]);
+      if (!provider) {
+        setError(
+          preferredWallet === "metamask"
+            ? "No se detectó MetaMask. Instala la extensión de MetaMask en Chrome."
+            : "No se detectó billetera Web3 compatible."
+        );
+        return;
       }
 
-      const currentChainIdHex: string = await ethereum.request({
-        method: "eth_chainId",
-      });
-      const parsedChainId = parseInt(currentChainIdHex, 16);
-      setChainId(parsedChainId);
+      setIsConnecting(true);
+      setError(null);
 
-      if (parsedChainId !== avalancheFuji.id) {
-        await switchNetwork();
+      try {
+        const accounts: string[] = await provider.request({
+          method: "eth_requestAccounts",
+        });
+
+        if (accounts && accounts.length > 0) {
+          setAddress(accounts[0]);
+          setConnectedWallet(preferredWallet);
+        }
+
+        const currentChainIdHex: string = await provider.request({
+          method: "eth_chainId",
+        });
+        const parsedChainId = parseInt(currentChainIdHex, 16);
+        setChainId(parsedChainId);
+
+        if (parsedChainId !== avalancheFuji.id) {
+          try {
+            await provider.request({
+              method: "wallet_switchEthereumChain",
+              params: [{ chainId: `0x${avalancheFuji.id.toString(16)}` }],
+            });
+          } catch (switchError: any) {
+            if (switchError.code === 4902) {
+              await provider.request({
+                method: "wallet_addEthereumChain",
+                params: [
+                  {
+                    chainId: `0x${avalancheFuji.id.toString(16)}`,
+                    chainName: avalancheFuji.name,
+                    nativeCurrency: avalancheFuji.nativeCurrency,
+                    rpcUrls: avalancheFuji.rpcUrls.default.http,
+                    blockExplorerUrls: [avalancheFuji.blockExplorers.default.url],
+                  },
+                ],
+              });
+            }
+          }
+        }
+      } catch (err: any) {
+        console.error("Connection error:", err);
+        setError(err?.message || "Error al conectar la billetera.");
+      } finally {
+        setIsConnecting(false);
       }
-    } catch (err: any) {
-      console.error("Connection error:", err);
-      setError(err?.message || "Failed to connect wallet.");
-    } finally {
-      setIsConnecting(false);
-    }
-  }, [switchNetwork]);
+    },
+    []
+  );
 
   const disconnect = useCallback(() => {
     setAddress(null);
     setChainId(null);
+    setConnectedWallet(null);
     setError(null);
   }, []);
 
   useEffect(() => {
-    const ethereum = getEthereum();
-    if (!ethereum) return;
+    const provider = getProvider("metamask");
+    if (!provider) return;
 
     const handleAccountsChanged = (accounts: string[]) => {
       if (accounts.length === 0) {
@@ -130,22 +216,26 @@ export function Web3Provider({ children }: { children: ReactNode }) {
       setChainId(parseInt(chainHex, 16));
     };
 
-    ethereum.on?.("accountsChanged", handleAccountsChanged);
-    ethereum.on?.("chainChanged", handleChainChanged);
+    provider.on?.("accountsChanged", handleAccountsChanged);
+    provider.on?.("chainChanged", handleChainChanged);
 
     // Auto-reconnect if already permitted
-    ethereum.request?.({ method: "eth_accounts" }).then((accounts: string[]) => {
-      if (accounts && accounts.length > 0) {
-        setAddress(accounts[0]);
-        ethereum.request?.({ method: "eth_chainId" }).then((chainHex: string) => {
-          setChainId(parseInt(chainHex, 16));
-        });
-      }
-    }).catch(() => {});
+    provider
+      .request?.({ method: "eth_accounts" })
+      .then((accounts: string[]) => {
+        if (accounts && accounts.length > 0) {
+          setAddress(accounts[0]);
+          setConnectedWallet("metamask");
+          provider.request?.({ method: "eth_chainId" }).then((chainHex: string) => {
+            setChainId(parseInt(chainHex, 16));
+          });
+        }
+      })
+      .catch(() => {});
 
     return () => {
-      ethereum.removeListener?.("accountsChanged", handleAccountsChanged);
-      ethereum.removeListener?.("chainChanged", handleChainChanged);
+      provider.removeListener?.("accountsChanged", handleAccountsChanged);
+      provider.removeListener?.("chainChanged", handleChainChanged);
     };
   }, [disconnect]);
 
@@ -156,6 +246,7 @@ export function Web3Provider({ children }: { children: ReactNode }) {
         chainId,
         isConnected: !!address,
         isConnecting,
+        connectedWallet,
         error,
         connect,
         disconnect,
