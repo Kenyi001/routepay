@@ -5,7 +5,16 @@ Arica–Tambo Quemado–Santa Cruz/Cochabamba corridor.
 
 Built for **ETH Bolivia Buildathon 2026** (Cochabamba, 11–13 sep 2026).
 
-**Live demo:** https://frontend-mu-bay-zvc6ih2zcs.vercel.app (Avalanche Fuji Testnet)
+## Links
+
+| | |
+|---|---|
+| **GitHub (this repo, public)** | https://github.com/RoutePay-Protocol/routepay |
+| **Live demo** | https://frontend-mu-bay-zvc6ih2zcs.vercel.app |
+| **Network** | Avalanche Fuji Testnet — Chain ID `43113` |
+| **TradeEscrow contract** | [`0x33cA337680366d337931a6f22226214d09594011`](https://testnet.snowtrace.io/address/0x33cA337680366d337931a6f22226214d09594011) |
+| **ERC-2771 Forwarder** | [`0x33E5Adf857F02C5e56174c99b610C86e04610a6D`](https://testnet.snowtrace.io/address/0x33E5Adf857F02C5e56174c99b610C86e04610a6D) |
+| **USDC (Circle, testnet)** | [`0x5425890298aed601595a70AB815c96711a31Bc65`](https://testnet.snowtrace.io/address/0x5425890298aed601595a70AB815c96711a31Bc65) |
 
 ## What is this
 
@@ -90,11 +99,7 @@ Start here, then branch out to whichever question you actually have:
 
 ## Deployed contracts (Avalanche Fuji)
 
-| Contract | Address |
-|---|---|
-| `TradeEscrow` | [`0xbA4164F1829b8E1eEf0F78b6AEe517D8fdaC34Ee`](https://testnet.snowtrace.io/address/0xbA4164F1829b8E1eEf0F78b6AEe517D8fdaC34Ee) |
-| `ERC2771Forwarder` | _pending — update once confirmed_ |
-| USDC (Circle, testnet) | `0x5425890298aed601595a70AB815c96711a31Bc65` |
+See the [Links](#links) table at the top for the current addresses and explorer links.
 
 ## Tracks
 
@@ -126,8 +131,9 @@ Start here, then branch out to whichever question you actually have:
 - Frontend live on Vercel, wired to the real deployed address (no more placeholder).
 - Demo wallet already funded with real testnet USDC and AVAX (see
   [`docs/CORRIDA-REAL-DE-CARGA.md`](docs/CORRIDA-REAL-DE-CARGA.md)).
-- Open items: `ERC2771Forwarder` address still needs confirming, and a rehearsed
-  end-to-end run against the pitch script's timing.
+- `ERC2771Forwarder` confirmed live and correctly wired (`isTrustedForwarder` returns
+  `true` on-chain).
+- Open item: a rehearsed end-to-end run against the pitch script's timing.
 
 ## License
 
