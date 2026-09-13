@@ -44,7 +44,13 @@ export const TransitTimeline: React.FC<TransitTimelineProps> = ({
       >
         <div>
           <h2 className="font-extrabold text-sm flex items-center gap-2" style={{ color: "var(--navy)" }}>
-            🚛 Panel del Transportista
+            <svg className="w-4 h-4 text-[var(--blue-main)]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <rect x="1" y="3" width="15" height="13" rx="1"></rect>
+              <polygon points="16 8 20 8 23 11 23 16 16 16 16 8"></polygon>
+              <circle cx="5.5" cy="18.5" r="2.5"></circle>
+              <circle cx="18.5" cy="18.5" r="2.5"></circle>
+            </svg>
+            Panel del Transportista
           </h2>
           <p className="text-[11px]" style={{ color: "var(--text-secondary)" }}>
             Seguimiento de envío de inicio a fin
@@ -79,9 +85,9 @@ export const TransitTimeline: React.FC<TransitTimelineProps> = ({
 
         <p className="text-[11px] text-blue-100 mt-1.5 leading-relaxed">
           {orderStatus === "settled"
-            ? "✓ Flete cobrado y transferido a tu billetera."
+            ? "Flete cobrado y transferido a tu billetera."
             : orderStatus === "refunded"
-            ? "⚠️ Fondos reembolsados al importador por exceder el tiempo estimado."
+            ? "Fondos reembolsados al importador por exceder el tiempo estimado."
             : "Fondos 100% garantizados en custodia on-chain. Se liberan al transportista al verificar la entrega con la tarjeta Tangem NFC."}
         </p>
 
@@ -240,9 +246,12 @@ export const TransitTimeline: React.FC<TransitTimelineProps> = ({
         <button
           onClick={onOpenTruckModal}
           type="button"
-          className="rp-btn-outline w-full py-2.5 text-xs flex items-center justify-center gap-1.5"
+          className="rp-btn-outline w-full py-2.5 text-xs flex items-center justify-center gap-2"
         >
-          <span>🚚</span> Ver Animación de Camión y Telemetría en Ruta
+          <svg className="w-4 h-4 text-[var(--blue-main)]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <polygon points="3 11 22 2 13 21 11 13 3 11" />
+          </svg>
+          Ver Tramo en Ruta y Telemetría
         </button>
       )}
 
@@ -255,7 +264,9 @@ export const TransitTimeline: React.FC<TransitTimelineProps> = ({
           disabled={isLoading}
           className="rp-btn-primary w-full py-3.5 text-xs flex items-center justify-center gap-2"
         >
-          <span>🚛</span>
+          <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <polygon points="5 3 19 12 5 21 5 3"></polygon>
+          </svg>
           {isLoading ? "Registrando salida en blockchain…" : "Iniciar Tránsito: Confirmar Salida de Puerto Arica"}
         </button>
       )}
@@ -267,7 +278,10 @@ export const TransitTimeline: React.FC<TransitTimelineProps> = ({
             onClick={onOpenTangemModal}
             className="rp-btn-green w-full py-3.5 text-xs flex items-center justify-center gap-2 shadow-lg"
           >
-            <span>💳</span>
+            <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <rect x="2" y="5" width="20" height="14" rx="2"></rect>
+              <line x1="2" y1="10" x2="22" y2="10"></line>
+            </svg>
             <strong>Confirmar Entrega en Almacén (Firma con Tarjeta Tangem)</strong>
           </button>
 
@@ -275,10 +289,15 @@ export const TransitTimeline: React.FC<TransitTimelineProps> = ({
             <button
               onClick={onOpenDispute}
               type="button"
-              className="py-1 text-[11px] font-mono hover:underline"
+              className="py-1 text-[11px] font-mono hover:underline flex items-center justify-center gap-1.5"
               style={{ color: "var(--warning)" }}
             >
-              ⚠️ Reportar Retención en Aduana (Tambo Quemado)
+              <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
+                <line x1="12" y1="9" x2="12" y2="13"></line>
+                <line x1="12" y1="17" x2="12.01" y2="17"></line>
+              </svg>
+              Reportar Retención en Aduana (Tambo Quemado)
             </button>
           )}
 
@@ -291,8 +310,12 @@ export const TransitTimeline: React.FC<TransitTimelineProps> = ({
             }}
           >
             <div className="flex items-center justify-between text-xs">
-              <span className="font-bold flex items-center gap-1" style={{ color: "var(--error)" }}>
-                <span>⏱️</span> ¿El flete tardó más del tiempo estimado?
+              <span className="font-bold flex items-center gap-1.5" style={{ color: "var(--error)" }}>
+                <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <circle cx="12" cy="12" r="10"></circle>
+                  <polyline points="12 6 12 12 16 14"></polyline>
+                </svg>
+                ¿El flete tardó más del tiempo estimado?
               </span>
               <span className="text-[10px] font-mono text-slate-500">
                 Deadline: 7 días
@@ -306,14 +329,18 @@ export const TransitTimeline: React.FC<TransitTimelineProps> = ({
               <button
                 type="button"
                 onClick={() => setShowTimeoutConfirm(true)}
-                className="py-2 px-3 rounded-lg text-xs font-bold transition-colors"
+                className="py-2 px-3 rounded-lg text-xs font-bold transition-colors flex items-center justify-center gap-1.5"
                 style={{
                   background: "transparent",
                   border: "1.5px solid var(--error)",
                   color: "var(--error)",
                 }}
               >
-                ⏳ Solicitar Reembolso por Expiración de Tiempo Estimado
+                <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M23 4v6h-6"></path>
+                  <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path>
+                </svg>
+                Solicitar Reembolso por Expiración de Tiempo Estimado
               </button>
             ) : (
               <div className="flex flex-col gap-2 p-2 rounded-lg bg-red-50 border border-red-200">
@@ -355,8 +382,13 @@ export const TransitTimeline: React.FC<TransitTimelineProps> = ({
             border: "1px solid rgba(220, 38, 38, 0.3)",
           }}
         >
-          <p className="text-xs font-extrabold" style={{ color: "var(--error)" }}>
-            ⚠️ Fondos Reembolsados al Importador
+          <p className="text-xs font-extrabold flex items-center justify-center gap-1.5" style={{ color: "var(--error)" }}>
+            <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="12" cy="12" r="10"></circle>
+              <line x1="12" y1="8" x2="12" y2="12"></line>
+              <line x1="12" y1="16" x2="12.01" y2="16"></line>
+            </svg>
+            Fondos Reembolsados al Importador
           </p>
           <p className="text-[11px]" style={{ color: "var(--text-secondary)" }}>
             El flete superó el tiempo estimado de entrega. El smart contract ejecutó <code>refundOnTimeout()</code> devolviendo el 100% (${frightAmount} USDC) al importador.
@@ -373,8 +405,13 @@ export const TransitTimeline: React.FC<TransitTimelineProps> = ({
             border: "1px solid rgba(245, 158, 11, 0.4)",
           }}
         >
-          <p className="text-xs font-bold" style={{ color: "var(--warning)" }}>
-            ⚠️ Retención Aduanera Reportada en Tambo Quemado
+          <p className="text-xs font-bold flex items-center gap-1.5" style={{ color: "var(--warning)" }}>
+            <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
+              <line x1="12" y1="9" x2="12" y2="13"></line>
+              <line x1="12" y1="17" x2="12.01" y2="17"></line>
+            </svg>
+            Retención Aduanera Reportada en Tambo Quemado
           </p>
           <p className="text-[11px]" style={{ color: "var(--text-secondary)" }}>
             Fiscalización aduanera en curso. Resolución mediante árbitro:
@@ -405,7 +442,11 @@ export const TransitTimeline: React.FC<TransitTimelineProps> = ({
             border: "1.5px solid rgba(8, 161, 110, 0.35)",
           }}
         >
-          <div className="text-2xl">🎉</div>
+          <div className="w-12 h-12 mx-auto rounded-full bg-emerald-100 text-[var(--green-main)] flex items-center justify-center">
+            <svg className="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="20 6 9 17 4 12"></polyline>
+            </svg>
+          </div>
           <p className="text-sm font-extrabold" style={{ color: "var(--green-main)" }}>
             ¡Flete Cobrado con Éxito!
           </p>
@@ -419,9 +460,15 @@ export const TransitTimeline: React.FC<TransitTimelineProps> = ({
           {onOpenCertificate && (
             <button
               onClick={onOpenCertificate}
-              className="rp-btn-green w-full py-2.5 text-xs mt-1"
+              className="rp-btn-green w-full py-2.5 text-xs mt-1 flex items-center justify-center gap-1.5"
             >
-              📜 Ver Certificado Criptográfico de Entrega
+              <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                <polyline points="14 2 14 8 20 8"></polyline>
+                <line x1="16" y1="13" x2="8" y2="13"></line>
+                <line x1="16" y1="17" x2="8" y2="17"></line>
+              </svg>
+              Ver Certificado Criptográfico de Entrega
             </button>
           )}
 

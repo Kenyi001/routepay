@@ -114,10 +114,10 @@ export default function RoutePayApp() {
     setIsPollarModalOpen(false);
     const hash = res.hash || "0x9f3e...881a";
     if (method === "pollar") {
-      showToast(language === "es" ? "✓ Pago QR Pollar procesado. $2,500 USDC custodiados en Avalanche." : "✓ Pollar QR processed. $2,500 USDC locked on Avalanche.", "success");
+      showToast(language === "es" ? "Pago QR Pollar procesado. $2,500 USDC custodiados en Avalanche." : "Pollar QR processed. $2,500 USDC locked on Avalanche.", "success");
       addLog("createAndFundOrder() [Pollar BOB]", `$${frightAmount} USDC locked via Pollar QR (MIC/DTA registered)`, hash);
     } else {
-      showToast(language === "es" ? "✓ Fondos bloqueados en el contrato de custodia." : "✓ Funds locked in escrow contract.", "success");
+      showToast(language === "es" ? "Fondos bloqueados en el contrato de custodia." : "Funds locked in escrow contract.", "success");
       addLog("createAndFundOrder() [Direct USDC]", `$${frightAmount} USDC locked in TradeEscrow vault (MIC/DTA registered)`, hash);
     }
   };
@@ -127,7 +127,7 @@ export default function RoutePayApp() {
     const res = await startTransit(BigInt(1));
     setOrderStatus("in_transit");
     const hash = res.hash || "0x2c4e...119d";
-    showToast(language === "es" ? "🚚 Salida de Puerto confirmada. Tránsito iniciado." : "🚚 Port departure confirmed. Transit started.", "info");
+    showToast(language === "es" ? "Salida de Puerto confirmada. Tránsito iniciado." : "Port departure confirmed. Transit started.", "info");
     addLog("startTransit()", "Carrier dispatched from Arica port towards Tambo Quemado", hash);
   };
 
@@ -141,7 +141,7 @@ export default function RoutePayApp() {
     const res = await settleWithTangemTap(BigInt(1));
     setOrderStatus("settled");
     const hash = res.hash || "0x7a1b...55f2";
-    showToast(language === "es" ? "🎉 Entrega verificada por Tangem NFC. Liquidación ejecutada en Avalanche." : "🎉 Delivery verified by Tangem NFC. Settlement executed on Avalanche.", "success");
+    showToast(language === "es" ? "Entrega verificada por Tangem NFC. Liquidación ejecutada en Avalanche." : "Delivery verified by Tangem NFC. Settlement executed on Avalanche.", "success");
     addLog("settleWithTangemTap()", `Tangem NFC EAL6+ verified. Payout: $${carrierPayout} USDC`, hash);
   };
 
@@ -152,8 +152,8 @@ export default function RoutePayApp() {
     const hash = res.hash || "0x8f4c...33b1";
     showToast(
       language === "es"
-        ? "⚠️ Plazo vencido. Fondos ($2,500 USDC) reembolsados íntegramente al Importador."
-        : "⚠️ Timeout expired. Funds ($2,500 USDC) refunded to Importer.",
+        ? "Plazo vencido. Fondos ($2,500 USDC) reembolsados íntegramente al Importador."
+        : "Timeout expired. Funds ($2,500 USDC) refunded to Importer.",
       "error"
     );
     addLog("refundOnTimeout() [Demora Excesiva]", `Escrow refunded 100% ($${frightAmount} USDC) to Importer on Avalanche`, hash);
@@ -162,7 +162,7 @@ export default function RoutePayApp() {
   const handleOpenDispute = () => {
     setOrderStatus("disputed");
     const h = "0x" + Array.from({ length: 64 }, () => Math.floor(Math.random() * 16).toString(16)).join("");
-    showToast(language === "es" ? "⚠️ Retención aduanera reportada en Tambo Quemado." : "⚠️ Customs retention reported at Tambo Quemado.", "error");
+    showToast(language === "es" ? "Retención aduanera reportada en Tambo Quemado." : "Customs retention reported at Tambo Quemado.", "error");
     addLog("openDispute()", "Border retention reported at Tambo Quemado customs checkpoint", h);
   };
 
@@ -240,14 +240,15 @@ export default function RoutePayApp() {
           </div>
           {role === "importer" && (
             <span className="font-bold flex items-center gap-1.5" style={{ color: "var(--green-main)" }}>
-              🟢 Pollar (BOB ➔ USDC)
+              <span className="w-2 h-2 rounded-full bg-[var(--green-main)]"></span>
+              Pollar (BOB ➔ USDC)
               <span style={{ color: "var(--border)" }}>·</span>
               <span style={{ color: "var(--blue-bright)" }}>Avalanche</span>
             </span>
           )}
           {role === "carrier" && (
             <span className="font-bold flex items-center gap-1.5" style={{ color: "var(--blue-main)" }}>
-              🏔️ MIC/DTA
+              MIC/DTA
               <span style={{ color: "var(--border)" }}>·</span>
               <span style={{ color: "var(--green-main)" }}>TradeEscrow · Tangem</span>
             </span>
@@ -378,7 +379,11 @@ export default function RoutePayApp() {
             >
               <div className="flex items-center justify-between pb-2" style={{ borderBottom: "1px solid var(--border)" }}>
                 <h2 className="font-extrabold text-sm flex items-center gap-2" style={{ color: "var(--navy)" }}>
-                  📋 Orden del Importador
+                  <svg className="w-4 h-4 text-[var(--blue-main)]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                    <polyline points="14 2 14 8 20 8"></polyline>
+                  </svg>
+                  Orden del Importador
                 </h2>
                 <span className="rp-badge rp-badge-blue font-mono text-[10px]">Solo lectura</span>
               </div>
@@ -399,7 +404,7 @@ export default function RoutePayApp() {
                 <div className="p-2.5 rounded-lg" style={{ background: "var(--surface-2)", border: "1px solid var(--border)" }}>
                   <span className="text-[10px] font-mono uppercase tracking-wider block" style={{ color: "var(--text-muted)" }}>Estado</span>
                   <span className="font-bold" style={{ color: orderStatus === "none" ? "var(--text-muted)" : orderStatus === "in_transit" ? "var(--blue-bright)" : orderStatus === "settled" ? "var(--green-main)" : "var(--error)" }}>
-                    {orderStatus === "none" ? "Sin fondear" : orderStatus === "funded" ? "Fondeado ✓" : orderStatus === "in_transit" ? "En Tránsito 🚛" : orderStatus === "settled" ? "Liquidado 🎉" : orderStatus === "refunded" ? "Reembolsado ⚠️" : "En Disputa ⚠️"}
+                    {orderStatus === "none" ? "Sin fondear" : orderStatus === "funded" ? "Fondeado" : orderStatus === "in_transit" ? "En Tránsito" : orderStatus === "settled" ? "Liquidado" : orderStatus === "refunded" ? "Reembolsado" : "En Disputa"}
                   </span>
                 </div>
               </div>
@@ -417,7 +422,7 @@ export default function RoutePayApp() {
 
               <div>
                 <h2 className="font-black text-xl" style={{ color: "var(--navy)" }}>
-                  {orderStatus === "settled" ? "¡Entrega Verificada! 🎉" : "Acerca la Tarjeta Tangem NFC"}
+                  {orderStatus === "settled" ? "¡Entrega Verificada!" : "Acerca la Tarjeta Tangem NFC"}
                 </h2>
                 <p className="text-xs mt-1 max-w-xs" style={{ color: "var(--text-secondary)" }}>
                   {orderStatus === "settled"
@@ -467,7 +472,11 @@ export default function RoutePayApp() {
                       </div>
 
                       <div className="text-center">
-                        <div className="text-3xl mb-1">✅</div>
+                        <div className="w-10 h-10 mx-auto mb-1 rounded-full bg-white/20 flex items-center justify-center text-white">
+                          <svg className="w-6 h-6 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                            <polyline points="20 6 9 17 4 12"></polyline>
+                          </svg>
+                        </div>
                         <p className="text-xs font-black text-white">FIRMA VERIFICADA</p>
                         <p className="text-[9px] text-white/70 font-mono mt-0.5">HARDWARE CONFIRMED</p>
                       </div>
@@ -488,7 +497,11 @@ export default function RoutePayApp() {
                   onClick={handleOpenTangemModal}
                   className="rp-btn-primary w-full py-3.5 text-sm flex items-center justify-center gap-2"
                 >
-                  💳 <strong>Confirmar Entrega con Tarjeta Tangem NFC</strong>
+                  <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <rect x="2" y="5" width="20" height="14" rx="2"></rect>
+                    <line x1="2" y1="10" x2="22" y2="10"></line>
+                  </svg>
+                  <strong>Confirmar Entrega con Tarjeta Tangem NFC</strong>
                 </button>
               )}
 
@@ -497,13 +510,18 @@ export default function RoutePayApp() {
                   className="w-full p-3.5 rounded-xl text-center"
                   style={{ background: "rgba(8,161,110,0.08)", border: "1px solid rgba(8,161,110,0.3)" }}
                 >
-                  <p className="font-black text-sm" style={{ color: "var(--green-main)" }}>🎉 Flete Liquidado · ${carrierPayout} USDC acreditados</p>
+                  <p className="font-black text-sm flex items-center justify-center gap-1.5" style={{ color: "var(--green-main)" }}>
+                    <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                      <polyline points="20 6 9 17 4 12"></polyline>
+                    </svg>
+                    Flete Liquidado · ${carrierPayout} USDC acreditados
+                  </p>
                 </div>
               )}
 
               {/* Why Tangem */}
               <p className="text-[10px] font-mono" style={{ color: "var(--text-muted)" }}>
-                ❓ ¿Por qué Tangem NFC? · Hardware EAL6+ · Imposible falsificar sin la tarjeta física
+                ¿Por qué Tangem NFC? · Hardware EAL6+ · Imposible falsificar sin la tarjeta física
               </p>
             </div>
 
@@ -581,9 +599,13 @@ export default function RoutePayApp() {
       <TruckTransitModal
         isOpen={isTruckModalOpen}
         onClose={() => setIsTruckModalOpen(false)}
+        onConfirmWithTangem={() => {
+          setIsTruckModalOpen(false);
+          handleOpenTangemModal();
+        }}
         orderId="101"
         manifestId={manifestId}
-        amount={carrierPayout}
+        amount={frightAmount}
       />
 
       {/* Modal On-Ramp Pollar QR Simple (BOB ➔ USDC) */}
